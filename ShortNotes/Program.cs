@@ -21,9 +21,19 @@ namespace ShortNotes
             Application.SetCompatibleTextRenderingDefault(false);
             app = new Form1();
             string[] args = Environment.GetCommandLineArgs();
-            if (args.Length > 1 && args[1] == "-s")
+            if (args.Length > 1 )
             {
-                app.onlyTray = true;
+                for (int i = 0; i < args.Length; i++)
+                {
+                    switch (args[i])
+                    {
+                        case "-s":
+                            app.onlyTray = true;
+                            break;
+                        case "-c":
+                            app.clean = true;
+                            break;
+                    }
             }
 
             Application.Run(app);

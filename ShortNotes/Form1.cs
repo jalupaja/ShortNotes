@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
@@ -15,12 +16,31 @@ namespace ShortNotes
     {
         public bool close = false;
         public bool onlyTray = false;
+        public bool clean = false;
 
+        protected override void OnFormClosing(FormClosingEventArgs e)
+        {
+            ((nTabPage)Tabs.SelectedTab).startBackgroundWorker();
+            if (e.CloseReason == CloseReason.WindowsShutDown)
+            {
+
+            }
+            else if (close)
+            {
+
+            }
+            else
+                e.Cancel = true;
+            Application.ExitThread();
+            base.OnFormClosing(e);
+        }
         protected override void SetVisibleCore(bool value)
         {
             if (!this.IsHandleCreated) CreateHandle();
             base.SetVisibleCore(!onlyTray);
         }
+
+        KeyboardHook hook = new KeyboardHook(); //https://stackoverflow.com/questions/2450373/set-global-hotkeys-using-c-sharp
 
         NotifyIcon TrayIcon = new NotifyIcon();
         ContextMenuStrip TrayIconContextMenu = new ContextMenuStrip();
@@ -28,11 +48,13 @@ namespace ShortNotes
         ToolStripMenuItem MenuItemShow = new ToolStripMenuItem();
 
         ToolStripMenuItem AlwaysOnTop = new ToolStripMenuItem();
-        ToolStripMenuItem MenuCopyFilePath = new ToolStripMenuItem();
 
         public Form1()
         {
             InitializeComponent();
+
+            hook.RegisterHotKey(global::ModifierKeys.Control, Keys.OemPeriod);
+            hook.KeyPressed += new EventHandler<KeyPressedEventArgs>(hook_KeyPressed);
 
             #region Tray Stuff: https://www.codeproject.com/tips/627796/doing-a-notifyicon-program-the-right-way
             TrayIcon.Text = "ShortNotes";
@@ -100,6 +122,12 @@ namespace ShortNotes
             this.FormBorderStyle = FormBorderStyle.None;
             this.DoubleBuffered = true;
             this.SetStyle(ControlStyles.ResizeRedraw, true);
+            Tabs.Padding = new Point(0, 0);
+
+            if (!clean)
+            {
+                //!!! load last files here
+            }
 
             if (Tabs.TabCount == 0)
             {
@@ -109,9 +137,17 @@ namespace ShortNotes
             this.KeyPreview = true;
         }
 
+        void hook_KeyPressed(object sender, KeyPressedEventArgs e)
+        {
+            if (onlyTray || Focused || ((nTabPage)Tabs.SelectedTab).txtBox.Focused)
+                TrayShow(null, null);
+            else 
+                this.Activate();
+        }
+
         private void AlwaysOnTop_Click(object sender, EventArgs e)
         {
-            if(AlwaysOnTop.Text.Contains("off"))
+            if (AlwaysOnTop.Text.Contains("off"))
             {
                 TopMost = true;
                 AlwaysOnTop.Text = "Always On Top: on";
@@ -123,7 +159,7 @@ namespace ShortNotes
             }
         }
 
-        private void TrayShow(object sender, EventArgs e)
+        public void TrayShow(object sender, EventArgs e)
         {
             if (onlyTray)
             {
@@ -133,6 +169,7 @@ namespace ShortNotes
                 this.ShowInTaskbar = true;
                 this.Activate();
                 MenuItemShow.Text = "Hide";
+                ((nTabPage)Tabs.SelectedTab).txtBox.Focus();
             }
             else
             {
@@ -149,22 +186,6 @@ namespace ShortNotes
             {
                 TrayShow(null, null);
             }
-        }
-
-        protected override void OnFormClosing(FormClosingEventArgs e)
-        {
-            if (e.CloseReason == CloseReason.WindowsShutDown)
-            {
-
-            }
-            else if (close)
-            {
-
-            }
-            else
-                e.Cancel = true;
-            Application.ExitThread();
-            base.OnFormClosing(e);
         }
 
         #region move and resize stuff by: https://stackoverflow.com/questions/2575216/how-to-move-and-resize-a-form-without-a-border
@@ -203,7 +224,7 @@ namespace ShortNotes
 
         private void BtnMinimize_Click(object sender, EventArgs e)
         {
-            TrayIcon_Click(null, null);
+            TrayShow(null, null);
         }
 
         private void Tabs_SelectedIndexChanged(object sender, EventArgs e)
@@ -211,12 +232,15 @@ namespace ShortNotes
             Tabs.SelectedTab.Controls.Find("txtBox", false).First().Focus();
         }
 
-        private void Form1_KeyDown(object sender, KeyEventArgs e)
+        private void Form1_KeyDown(object sender, KeyEventArgs e) //local Hotkeys
         {
             if (e.Control && e.KeyCode == Keys.Tab)
             {
+                //safe file to local folder
+                ((nTabPage)Tabs.SelectedTab).startBackgroundWorker();
+
                 //!!! smart tabs
-                if (Tabs.Controls.IndexOf(Tabs.SelectedTab) == Tabs.TabCount-1)
+                if (Tabs.Controls.IndexOf(Tabs.SelectedTab) == Tabs.TabCount - 1)
                     Tabs.SelectTab(0);
                 else
                     Tabs.SelectTab(Tabs.Controls.IndexOf(Tabs.SelectedTab) + 1);
@@ -224,12 +248,34 @@ namespace ShortNotes
             }
             else if (e.Control && (e.KeyCode == Keys.N || e.KeyCode == Keys.T))
             {
+                //safe file to local folder
+                ((nTabPage)Tabs.SelectedTab).startBackgroundWorker();
+
                 newTab();
+                ResetOrder();
                 e.SuppressKeyPress = true;
             }
-            else  if (e.Control && e.KeyCode == Keys.W)
+            else if (e.Control && e.KeyCode == Keys.W)
             {
-                //!!! ask if wants to safe
+                if (!((nTabPage)Tabs.SelectedTab).saved)
+                {
+                    var msg = MessageBox.Show($"Do you want to save {Tabs.SelectedTab.Name}?", $"Save {Tabs.SelectedTab.Name}?", MessageBoxButtons.YesNoCancel, MessageBoxIcon.Question, MessageBoxDefaultButton.Button2);
+                    if (msg == DialogResult.OK)
+                    {
+                        ((nTabPage)Tabs.SelectedTab).saveNow();
+                    }
+                    else if (msg == DialogResult.Cancel)
+                        return;
+                }
+
+                //delete local file
+                string filename = "";
+                if (((nTabPage)Tabs.SelectedTab).location == "")
+                    filename = Convert.ToBase64String(Encoding.UTF8.GetBytes(((nTabPage)Tabs.SelectedTab).name));
+                else
+                    filename = Convert.ToBase64String(Encoding.UTF8.GetBytes(((nTabPage)Tabs.SelectedTab).location));
+                File.Delete(Path.Combine(Path.Combine(Application.StartupPath, "tmp"), filename));
+
                 int index = Tabs.SelectedIndex;
                 var tab = Tabs.SelectedTab;
                 if (Tabs.TabCount == 1)
@@ -242,11 +288,13 @@ namespace ShortNotes
                     Tabs.SelectedIndex = 0;
                 else
                     Tabs.SelectedIndex = index - 1;
+                ResetOrder();
                 e.SuppressKeyPress = true;
             }
             else if (e.Control && e.KeyCode == Keys.S)
             {
-                //!!! safe or open "safe to"
+                ((nTabPage)Tabs.SelectedTab).saveNow();
+                ResetOrder();
                 e.SuppressKeyPress = true;
             }
         }
@@ -260,10 +308,10 @@ namespace ShortNotes
             contextMenu.BackColor = Color.Black;
             contextMenu.ForeColor = Color.White;
 
-            ToolStripMenuItem MenuSafeAs = new ToolStripMenuItem();
-            MenuSafeAs.Text = "SafeAs";
-            MenuSafeAs.BackColor = Color.Black;
-            MenuSafeAs.Click += MenuSafeAs_Click;
+            ToolStripMenuItem MenuSaveAs = new ToolStripMenuItem();
+            MenuSaveAs.Text = "SaveAs";
+            MenuSaveAs.BackColor = Color.Black;
+            MenuSaveAs.Click += MenuSaveAs_Click;
 
             ToolStripMenuItem MenuCopyFilePath = new ToolStripMenuItem();
             MenuCopyFilePath.Text = "Copy filepath";
@@ -273,7 +321,7 @@ namespace ShortNotes
 
             contextMenu.Items.AddRange(new ToolStripItem[]
             {
-                MenuSafeAs, MenuCopyFilePath
+                MenuSaveAs, MenuCopyFilePath
             });
             contextMenu.ResumeLayout(false);
             #endregion
@@ -283,9 +331,11 @@ namespace ShortNotes
             txtBox.Name = "txtBox";
             txtBox.BackColor = Color.Black;
             txtBox.ForeColor = Color.White;
-            txtBox.Anchor = (AnchorStyles.Bottom | AnchorStyles.Top | AnchorStyles.Right | AnchorStyles.Left);
+            txtBox.Location = new Point(2, 0);
+            txtBox.Size = new Size(400, 455);
+            txtBox.Anchor = (AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right);
             txtBox.BorderStyle = BorderStyle.None;
-            txtBox.ScrollBars = RichTextBoxScrollBars.Both;
+            txtBox.ScrollBars = RichTextBoxScrollBars.ForcedBoth;
             txtBox.AllowDrop = true;
             txtBox.TabStop = false;
             txtBox.AcceptsTab = true;
@@ -295,7 +345,9 @@ namespace ShortNotes
             #endregion
 
             #region TabPage
-            if (location != "")
+            if (location == "")
+                txtBox.Text = "\n\n\n\n\n\n\n\n\n\n";
+            else
             {
                 name = Path.GetFileName(location);
                 byte[] buf = new byte[1024];
@@ -310,34 +362,52 @@ namespace ShortNotes
             }
             if (name == "")
             {
-                int i = 1;
-                name = $"new {i}";
-                while (false)//!!! while name doesnt exist
+                int i = 0;
+                for (int j = 0; j < Tabs.TabCount; j++)
                 {
-                    i++;
-                    name = $"new {i}";
+                    if (Tabs.TabPages[j].Name.Contains("new "))
+                    {
+                        try
+                        {
+                            if (Int16.Parse(Tabs.TabPages[j].Name.Replace("new ", "")) > i)
+                                i = Int16.Parse(Tabs.TabPages[j].Name.Replace("new ", ""));
+                        }
+                        catch (Exception) { }
+                    }
                 }
+                name = $"new {i + 1}";
             }
-            var nTab = new TabPage();
+            var nTab = new nTabPage();
+            nTab.name = name;
+            nTab.location = location;
             nTab.BackColor = Color.Black;
             nTab.BorderStyle = BorderStyle.None;
+            nTab.txtBox = txtBox;
             nTab.Controls.Add(txtBox);
             nTab.Text = name;
+            nTab.Name = name;
+            nTab.Padding = Padding.Empty;
+            nTab.Init();
             #endregion
 
             Tabs.Controls.Add(nTab);
-            Tabs.SelectTab(Tabs.TabCount-1);
+            Tabs.SelectTab(Tabs.TabCount - 1);
             Tabs.SelectedTab.Controls.Find("txtBox", false).First().Focus();
+        }
+
+        private void ResetOrder()
+        {
+            //!!! create index file: name, location, enc
         }
 
         private void MenuCopyFilePath_Click(object sender, EventArgs e)
         {
-            //!!!
+            Clipboard.SetText(((nTabPage)Tabs.SelectedTab).location);
         }
 
-        private void MenuSafeAs_Click(object sender, EventArgs e)
+        private void MenuSaveAs_Click(object sender, EventArgs e)
         {
-            //!!!
+            ((nTabPage)Tabs.SelectedTab).saveNow(true);
         }
 
         private void TabsDragOver(object sender, DragEventArgs e)
@@ -351,7 +421,67 @@ namespace ShortNotes
         {
             string[] files = e.Data.GetData(DataFormats.FileDrop) as string[]; // get all files droppeds  
             foreach (string file in files)
-                if (File.Exists(file)) { newTab("", file); }
+                if (File.Exists(file))
+                {
+                    bool neww = true;
+                    for (int i = 0; i < Tabs.TabCount; i++)
+                    {
+                        if (((nTabPage)Tabs.TabPages[i]).location == file)
+                        {
+                            Tabs.SelectedTab = Tabs.TabPages[i];
+                            neww = false;
+                        }
+                    }
+                    if (neww)
+                        newTab("", file);
+                }
+        }
+
+        private void Tabs_MouseMove(object sender, MouseEventArgs e)
+        {
+            if (e.Button == MouseButtons.Left)
+                this.Tabs.DoDragDrop(this.Tabs.SelectedTab, DragDropEffects.All);
+        }
+
+        private void Tabs_DragDrop(object sender, DragEventArgs e)
+        {
+            TabPage drag_tab = (TabPage)e.Data.GetData(typeof(TabPage));
+            int item_drag_index = Tabs.Controls.IndexOf(drag_tab);
+
+            //Don't do anything if we are hovering over ourself.
+            if (item_drag_index != 0)
+            {
+                ArrayList pages = new ArrayList();
+
+                //Put all tab pages into an array.
+                for (int i = 0; i < Tabs.TabPages.Count; i++)
+                {
+                    //Except the one we are dragging.
+                    if (i != item_drag_index)
+                        pages.Add(Tabs.TabPages[i]);
+                }
+
+                //Now put the one we are dragging it at the proper location.
+                pages.Insert(0, drag_tab);
+
+                //Make them all go away for a nanosec.
+                Tabs.TabPages.Clear();
+
+                //Add them all back in.
+                Tabs.TabPages.AddRange((TabPage[])pages.ToArray(typeof(TabPage)));
+
+                //Make sure the drag tab is selected.
+                Tabs.SelectedTab = drag_tab;
+                ResetOrder();
+            }
+        }
+
+        private void Tabs_DragEnter(object sender, DragEventArgs e)
+        {
+            if (e.Data.GetDataPresent(typeof(TabPage)))
+                e.Effect = DragDropEffects.Move;
+            else
+                e.Effect = DragDropEffects.None;
         }
     }
 }

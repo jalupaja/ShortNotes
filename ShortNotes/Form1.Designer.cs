@@ -31,7 +31,8 @@ namespace ShortNotes
         {
             this.BtnExit = new System.Windows.Forms.Button();
             this.BtnMinimize = new System.Windows.Forms.Button();
-            this.Tabs = new System.Windows.Forms.TabControl();
+            this.Tabs = new ShortNotes.nTabControl();
+            this.backgroundWorker1 = new System.ComponentModel.BackgroundWorker();
             this.SuspendLayout();
             // 
             // BtnExit
@@ -65,17 +66,21 @@ namespace ShortNotes
             // 
             // Tabs
             // 
+            this.Tabs.AllowDrop = true;
             this.Tabs.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
             | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
             this.Tabs.Location = new System.Drawing.Point(0, 25);
-            this.Tabs.Margin = new System.Windows.Forms.Padding(1);
             this.Tabs.Name = "Tabs";
+            this.Tabs.Padding = new System.Drawing.Point(0, 0);
             this.Tabs.SelectedIndex = 0;
-            this.Tabs.Size = new System.Drawing.Size(395, 474);
-            this.Tabs.TabIndex = 1;
+            this.Tabs.Size = new System.Drawing.Size(395, 473);
+            this.Tabs.TabIndex = 2;
             this.Tabs.TabStop = false;
             this.Tabs.SelectedIndexChanged += new System.EventHandler(this.Tabs_SelectedIndexChanged);
+            this.Tabs.DragDrop += new System.Windows.Forms.DragEventHandler(this.Tabs_DragDrop);
+            this.Tabs.DragEnter += new System.Windows.Forms.DragEventHandler(this.Tabs_DragEnter);
+            this.Tabs.MouseMove += new System.Windows.Forms.MouseEventHandler(this.Tabs_MouseMove);
             // 
             // Form1
             // 
@@ -98,7 +103,8 @@ namespace ShortNotes
 
         private System.Windows.Forms.Button BtnExit;
         private System.Windows.Forms.Button BtnMinimize;
-        private System.Windows.Forms.TabControl Tabs;
+        private nTabControl Tabs;
+        private System.ComponentModel.BackgroundWorker backgroundWorker1;
     }
 }
 
