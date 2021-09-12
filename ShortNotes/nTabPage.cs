@@ -27,6 +27,7 @@ namespace ShortNotes
             this.VScroll = true;
 
             backgroundWorker = new BackgroundWorker();
+            backgroundWorker.WorkerSupportsCancellation = true;
             backgroundWorker.DoWork += new DoWorkEventHandler(this.backgroundWorker_DoWork);
 
         }
@@ -38,7 +39,17 @@ namespace ShortNotes
 
         public void startBackgroundWorker()
         {
-            backgroundWorker.RunWorkerAsync();
+            if (backgroundWorker.IsBusy)
+            {
+                backgroundWorker.CancelAsync();
+                try
+                {
+                    backgroundWorker.RunWorkerAsync();
+                }
+                catch (Exception) { }
+            }
+            else
+                backgroundWorker.RunWorkerAsync();
         }
 
         private void backgroundWorker_DoWork(object sender, DoWorkEventArgs e)
@@ -75,6 +86,9 @@ namespace ShortNotes
                 else
                 {
                     string filename = "";
+
+                    filename = name;
+                    
                     if (location == "")
                         filename = Convert.ToBase64String(Encoding.UTF8.GetBytes(name));
                     else
@@ -123,7 +137,7 @@ namespace ShortNotes
                         tmpName = name;
                         Text = name;
                         Name = name;
-                        backgroundWorker.RunWorkerAsync();
+                        startBackgroundWorker();
                     }
                     else
                         return;
@@ -134,7 +148,7 @@ namespace ShortNotes
                 tmpName = name;
                 saved = true;
                 Text = name;
-                backgroundWorker.RunWorkerAsync();
+                startBackgroundWorker();
             }
         }
     }

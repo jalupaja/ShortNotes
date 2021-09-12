@@ -33,7 +33,11 @@ namespace ShortNotes
                         case "-c":
                             app.clean = true;
                             break;
+                        case "-h":
+                            app.silent = true;
+                            break;
                     }
+                }
             }
 
             Application.Run(app);

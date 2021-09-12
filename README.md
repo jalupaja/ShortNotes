@@ -3,11 +3,16 @@
 
 # Features:
 - Always On Top option
+- Drag and Drop for multiple files
+
 
 # ToDo:
 
+- add on click tabchange: 
+
 - fix file only gets safed on Strg T, not Tab
 - delete local file might not work
+- fix focus on first site
 
 - startmenu
 - autostart to tray
@@ -23,3 +28,38 @@
 - fix DragDrop between Tabs
 - change encoding (by reading text to bytes and back to text txtBox.AppendText(Encoding.ASCII.GetString))
 - Icon
+
+
+# Usage:
+
+*Startup:*
+	start program in tray:
+	`ShortNotes.exe -s`
+	start program clean (delete all temporary, last used files):
+	`ShortNotes.exe -c`
+	start program hidden (loads all last used files but doesn't safe changes to any temporary files):
+	`ShortNotes.exe -h`
+	start program hidden and clean (doesn't load last used files but doesn't delete them. It wont safe changes to any temporary files):
+	`ShortNotes.exe -h -c`
+
+*Hotkeys:*
+
+(global):
+	(Strg + .):
+		Show/ Hide program from/ to tray
+		
+(local):
+	(Strg + N) | (Strg + T):
+		create new tab
+	(Strg + S):
+		save file
+	(Strg + Shift + S):
+		save file as
+	(Strg + W):
+		close tab
+	(Strg + F):
+		search tab
+	(Strg + Shift + F):
+		search all tabs
+
+

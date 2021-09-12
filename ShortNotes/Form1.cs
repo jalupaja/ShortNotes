@@ -17,6 +17,7 @@ namespace ShortNotes
         public bool close = false;
         public bool onlyTray = false;
         public bool clean = false;
+        public bool silent = false;
 
         protected override void OnFormClosing(FormClosingEventArgs e)
         {
@@ -48,6 +49,8 @@ namespace ShortNotes
         ToolStripMenuItem MenuItemShow = new ToolStripMenuItem();
 
         ToolStripMenuItem AlwaysOnTop = new ToolStripMenuItem();
+
+        private int lastTabIndex;
 
         public Form1()
         {
@@ -128,13 +131,21 @@ namespace ShortNotes
             {
                 //!!! load last files here
             }
+            else if (!silent)
+            {
+                foreach (string file in Directory.GetFiles(Path.Combine(Application.StartupPath, "tmp")))
+                    File.Delete(file);
+            }
 
             if (Tabs.TabCount == 0)
             {
                 newTab();
             }
 
+            lastTabIndex = Tabs.Controls.IndexOf(Tabs.SelectedTab);
+
             this.KeyPreview = true;
+
         }
 
         void hook_KeyPressed(object sender, KeyPressedEventArgs e)
@@ -227,30 +238,87 @@ namespace ShortNotes
             TrayShow(null, null);
         }
 
+
         private void Tabs_SelectedIndexChanged(object sender, EventArgs e)
         {
-            Tabs.SelectedTab.Controls.Find("txtBox", false).First().Focus();
+            if (!((nTabPage)Tabs.SelectedTab).saved || !silent) { ((nTabPage)Tabs.TabPages[lastTabIndex]).startBackgroundWorker(); }
+
+            ((nTabPage)Tabs.SelectedTab).txtBox.Focus();
+            lastTabIndex = Tabs.Controls.IndexOf(Tabs.SelectedTab);
+
+            #region tried "smart tabcontrol": not working
+            /*
+            if ((DateTime.Now - lastTimeNewPage).TotalMilliseconds < 50 || (Tabs.Controls.IndexOf(Tabs.SelectedTab) != lastTabIndex -1 && Tabs.Controls.IndexOf(Tabs.SelectedTab) != lastTabIndex + 1 && (lastTabIndex == 0 && Tabs.Controls.IndexOf(Tabs.SelectedTab) == Tabs.TabCount-1) && (lastTabIndex == Tabs.TabCount - 1 && Tabs.Controls.IndexOf(Tabs.SelectedTab) == 0)))
+            {
+                //safe file to local folder
+                ((nTabPage)Tabs.TabPages[lastTabIndex]).startBackgroundWorker();
+            }
+            else
+            {
+                if ((DateTime.Now - lastTabTime).TotalMilliseconds > 750)
+                {
+                    //safe file to local folder
+                    ((nTabPage)Tabs.TabPages[lastTabIndex]).startBackgroundWorker();
+                    if (secondLastTabIndex == Tabs.Controls.IndexOf(Tabs.SelectedTab))
+                    {
+                        ((nTabPage)Tabs.SelectedTab).txtBox.Focus();
+                    }
+                    else if (Tabs.TabPages[secondLastTabIndex] != null)
+                    {
+                        Tabs.SelectTab(secondLastTabIndex);
+                        ((nTabPage)Tabs.TabPages[secondLastTabIndex]).txtBox.Focus();
+                    }
+                    else
+                        ((nTabPage)Tabs.SelectedTab).txtBox.Focus();
+                }
+                else if ((DateTime.Now - lastTabTime).TotalMilliseconds > 10)
+                {
+                    //safe file to local folder
+                    ((nTabPage)Tabs.SelectedTab).startBackgroundWorker();
+                    if (Tabs.Controls.IndexOf(Tabs.SelectedTab) == secondLastTabIndex)
+                    {
+                        if (lastTabIndex == secondLastTabIndex - 1 || (secondLastTabIndex == Tabs.Controls.IndexOf(Tabs.SelectedTab) && lastTabIndex == 0))
+                        {
+                            if (secondLastTabIndex == Tabs.TabCount - 1)
+                            {
+                                Tabs.SelectTab(0);
+                                ((nTabPage)Tabs.TabPages[0]).txtBox.Focus();
+                            }
+                            else
+                            {
+                                Tabs.SelectTab(secondLastTabIndex + 1);
+                                ((nTabPage)Tabs.TabPages[secondLastTabIndex]).txtBox.Focus();
+                            }
+                        }
+                        else
+                        {
+                            if (secondLastTabIndex == 0)
+                            {
+                                Tabs.SelectTab(Tabs.TabCount - 1);
+                                ((nTabPage)Tabs.TabPages[Tabs.TabCount - 1]).txtBox.Focus();
+                            }
+                            else
+                            {
+                                Tabs.SelectTab(secondLastTabIndex - 1);
+                                ((nTabPage)Tabs.TabPages[secondLastTabIndex - 1]).txtBox.Focus();
+                            }
+                        }
+                    }
+                }
+                else
+                    return;
+            }
+            lastTabTime = DateTime.Now;
+            secondLastTabIndex = lastTabIndex;
+            lastTabIndex = Tabs.Controls.IndexOf(Tabs.SelectedTab);
+            */
+            #endregion
         }
 
         private void Form1_KeyDown(object sender, KeyEventArgs e) //local Hotkeys
         {
-            if (e.Control && e.KeyCode == Keys.Tab)
+            if (e.Control && (e.KeyCode == Keys.N || e.KeyCode == Keys.T))
             {
-                //safe file to local folder
-                ((nTabPage)Tabs.SelectedTab).startBackgroundWorker();
-
-                //!!! smart tabs
-                if (Tabs.Controls.IndexOf(Tabs.SelectedTab) == Tabs.TabCount - 1)
-                    Tabs.SelectTab(0);
-                else
-                    Tabs.SelectTab(Tabs.Controls.IndexOf(Tabs.SelectedTab) + 1);
-                e.SuppressKeyPress = true;
-            }
-            else if (e.Control && (e.KeyCode == Keys.N || e.KeyCode == Keys.T))
-            {
-                //safe file to local folder
-                ((nTabPage)Tabs.SelectedTab).startBackgroundWorker();
-
                 newTab();
                 ResetOrder();
                 e.SuppressKeyPress = true;
@@ -291,11 +359,25 @@ namespace ShortNotes
                 ResetOrder();
                 e.SuppressKeyPress = true;
             }
+            else if (e.Control && e.Shift && e.KeyCode == Keys.S)
+            {
+                ((nTabPage)Tabs.SelectedTab).saveNow(true);
+                ResetOrder();
+                e.SuppressKeyPress = true;
+            }
             else if (e.Control && e.KeyCode == Keys.S)
             {
                 ((nTabPage)Tabs.SelectedTab).saveNow();
                 ResetOrder();
                 e.SuppressKeyPress = true;
+            }
+            else if (e.Control && e.Shift && e.KeyCode == Keys.F) 
+            { 
+                //!!!
+            }
+            else if (e.Control && e.KeyCode == Keys.F) 
+            { 
+                //!!!
             }
         }
 
@@ -398,6 +480,10 @@ namespace ShortNotes
         private void ResetOrder()
         {
             //!!! create index file: name, location, enc
+            if (!silent)
+            {
+                
+            }
         }
 
         private void MenuCopyFilePath_Click(object sender, EventArgs e)
