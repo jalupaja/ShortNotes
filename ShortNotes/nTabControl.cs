@@ -15,8 +15,8 @@ namespace ShortNotes
         {
             /* Needed for DrawNItem
             DrawMode = TabDrawMode.OwnerDrawFixed;
-            this.DrawItem += DrawNItem;
-            */
+            this.DrawItem += DrawNItem;*/
+            
         }
 
 

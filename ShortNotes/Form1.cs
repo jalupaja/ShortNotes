@@ -9,6 +9,8 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using Microsoft.Win32;
+using IWshRuntimeLibrary;
 
 namespace ShortNotes
 {
@@ -49,6 +51,9 @@ namespace ShortNotes
         ToolStripMenuItem MenuItemShow = new ToolStripMenuItem();
 
         ToolStripMenuItem AlwaysOnTop = new ToolStripMenuItem();
+        ToolStripMenuItem StartMenu = new ToolStripMenuItem();
+        ToolStripMenuItem Startup = new ToolStripMenuItem();
+        
 
         private int lastTabIndex;
 
@@ -112,11 +117,26 @@ namespace ShortNotes
             AlwaysOnTop.Text = "Always On Top: off";
             AlwaysOnTop.Click += AlwaysOnTop_Click;
 
+            if (System.IO.File.Exists(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonStartMenu), "Programs", "ShortNotes", "ShortNotes" + ".lnk")))
+                StartMenu.Text = "Delete Start Menu";
+            else
+                StartMenu.Text = "Create Start Menu";
+            StartMenu.Click += StartMenu_Click;
+
+            RegistryKey rk = Registry.CurrentUser.OpenSubKey
+                ("SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run", true);
+
+            if (rk.GetValueNames().Contains("ShortNotes"))
+                Startup.Text = "Delete Startup entry";
+            else
+                Startup.Text = "Create Startup entry";
+            Startup.Click += Startup_Click;
+
             //!!!
 
             contextMenuTop.Items.AddRange(new ToolStripItem[]
             {
-                AlwaysOnTop
+                AlwaysOnTop, StartMenu, Startup
             });
             contextMenuTop.ResumeLayout(false);
             this.ContextMenuStrip = contextMenuTop;
@@ -134,7 +154,7 @@ namespace ShortNotes
             else if (!silent)
             {
                 foreach (string file in Directory.GetFiles(Path.Combine(Application.StartupPath, "tmp")))
-                    File.Delete(file);
+                    System.IO.File.Delete(file);
             }
 
             if (Tabs.TabCount == 0)
@@ -146,6 +166,72 @@ namespace ShortNotes
 
             this.KeyPreview = true;
 
+        }
+
+        private void Startup_Click(object sender, EventArgs e)
+        {
+            RegistryKey rk = Registry.CurrentUser.OpenSubKey
+                ("SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run", true);
+
+            if (rk.GetValueNames().Contains("ShortNotes"))
+            {
+                try
+                {
+                    rk.DeleteValue("ShortNotes", false);
+                    Startup.Text = "Create Startup entry";
+                }
+                catch (Exception)
+                {
+                    Startup.Text = "Delete Startup entry";
+                    MessageBox.Show("Insufficient Permissions!");
+                }
+            }
+            else
+            {
+                try
+                {
+                    rk.SetValue("ShortNotes", Application.ExecutablePath + " -s");
+                    Startup.Text = "Delete Startup entry";
+                }
+                catch (Exception)
+                {
+                    Startup.Text = "Create Startup entry";
+                    MessageBox.Show("Insufficient Permissions!");
+                }
+            }
+        }
+
+        private void StartMenu_Click(object sender, EventArgs e)
+        {
+            if (System.IO.File.Exists(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonStartMenu), "Programs", "ShortNotes", "ShortNotes" + ".lnk")))
+            {
+                try
+                {
+                    System.IO.File.Delete(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonStartMenu), "Programs", "ShortNotes", "ShortNotes" + ".lnk"));
+                    Directory.Delete(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonStartMenu), "Programs", "ShortNotes"), false); // Dont delete folder if another program uses it
+                } 
+                catch (Exception)
+                { }
+            }
+            else
+            {
+                WshShell shell = new WshShell();
+                IWshShortcut shortcut = (IWshShortcut)shell.CreateShortcut(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonStartMenu), "Programs", "ShortNotes", "ShortNotes" + ".lnk"));
+                try
+                {
+                    Directory.CreateDirectory(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonStartMenu), "Programs", "ShortNotes"));
+                    shortcut.Description = "A simple Notes program";
+                    shortcut.IconLocation = System.Windows.Forms.Application.ExecutablePath;
+                    shortcut.TargetPath = System.Windows.Forms.Application.ExecutablePath;
+                    shortcut.Save();
+                    StartMenu.Text = "Delete Start Menu";
+                }
+                catch (Exception)
+                {
+                    StartMenu.Text = "Create Start Menu";
+                    MessageBox.Show("Insufficient Permissions!");
+                }
+            }
         }
 
         void hook_KeyPressed(object sender, KeyPressedEventArgs e)
@@ -200,7 +286,7 @@ namespace ShortNotes
         }
 
         #region move and resize stuff by: https://stackoverflow.com/questions/2575216/how-to-move-and-resize-a-form-without-a-border
-        private const int cGrip = 18;      // Grip size
+        private const int cGrip = 20;      // Grip size
         private const int cCaption = 12;   // Caption bar height;
 
         Rectangle TopLeft { get { return new Rectangle(0, 0, cGrip, cGrip); } }
@@ -342,7 +428,7 @@ namespace ShortNotes
                     filename = Convert.ToBase64String(Encoding.UTF8.GetBytes(((nTabPage)Tabs.SelectedTab).name));
                 else
                     filename = Convert.ToBase64String(Encoding.UTF8.GetBytes(((nTabPage)Tabs.SelectedTab).location));
-                File.Delete(Path.Combine(Path.Combine(Application.StartupPath, "tmp"), filename));
+                System.IO.File.Delete(Path.Combine(Path.Combine(Application.StartupPath, "tmp"), filename));
 
                 int index = Tabs.SelectedIndex;
                 var tab = Tabs.SelectedTab;
@@ -434,7 +520,7 @@ namespace ShortNotes
                 name = Path.GetFileName(location);
                 byte[] buf = new byte[1024];
                 int c;
-                using (FileStream fs = File.OpenRead(location))
+                using (FileStream fs = System.IO.File.OpenRead(location))
                 {
                     while ((c = fs.Read(buf, 0, buf.Length)) > 0)
                     {
@@ -507,7 +593,7 @@ namespace ShortNotes
         {
             string[] files = e.Data.GetData(DataFormats.FileDrop) as string[]; // get all files droppeds  
             foreach (string file in files)
-                if (File.Exists(file))
+                if (System.IO.File.Exists(file))
                 {
                     bool neww = true;
                     for (int i = 0; i < Tabs.TabCount; i++)

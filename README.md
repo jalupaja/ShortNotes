@@ -32,34 +32,30 @@
 
 # Usage:
 
-*Startup:*
-	start program in tray:
-	`ShortNotes.exe -s`
-	start program clean (delete all temporary, last used files):
-	`ShortNotes.exe -c`
-	start program hidden (loads all last used files but doesn't safe changes to any temporary files):
-	`ShortNotes.exe -h`
-	start program hidden and clean (doesn't load last used files but doesn't delete them. It wont safe changes to any temporary files):
-	`ShortNotes.exe -h -c`
+Startup:
+start program in tray:
+`ShortNotes.exe -s`
+start program clean (delete all temporary, last used files):
+`ShortNotes.exe -c`
+start program hidden (loads all last used files but doesn't safe changes to any temporary files):
+`ShortNotes.exe -h`
+start program hidden and clean (doesn't load last used files but doesn't delete them. It wont safe changes to any temporary files):
+`ShortNotes.exe -h -c`
 
-*Hotkeys:*
+Hotkeys:
 
-(global):
-	(Strg + .):
-		Show/ Hide program from/ to tray
-		
-(local):
-	(Strg + N) | (Strg + T):
-		create new tab
-	(Strg + S):
-		save file
-	(Strg + Shift + S):
-		save file as
-	(Strg + W):
-		close tab
-	(Strg + F):
-		search tab
-	(Strg + Shift + F):
-		search all tabs
+global Hotkeys  | Function
+--------------- | ---------------
+(Strg + .)      | Show/ Hide program from/ to tray
+
+local Hotkeys  | Function
+-------------- | --------------
+(Strg + T)	   | create new tab
+(Strg + N)	   | create new tab
+(Strg + S)	   | save file
+(Strg+Shift+S) | save file as
+(Strg + W)	   | close tab
+(Strg + F)	   | search tab
+(Strg+Shift+F) | search all tabs
 
 
