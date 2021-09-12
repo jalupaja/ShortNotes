@@ -17,6 +17,7 @@ namespace ShortNotes
         public string location = "";
         public RichTextBox txtBox;
         public bool enc = false;
+        private bool auto = false;
 
         private string tmpName;
         private BackgroundWorker backgroundWorker;
@@ -35,10 +36,14 @@ namespace ShortNotes
         public void Init()
         {
             txtBox.TextChanged += TxtBox_TextChanged;
+            if (!saved)
+                Text = name + "*";
+
         }
 
-        public void startBackgroundWorker()
+        public void startBackgroundWorker(bool autom = false)
         {
+            auto = autom;
             if (backgroundWorker.IsBusy)
             {
                 backgroundWorker.CancelAsync();
@@ -60,13 +65,22 @@ namespace ShortNotes
             }
             else
             {
-                if (saved && location != "")
+                if (saved && location != "" && !auto)
                 {
                     try
                     {
+
+                        string text = "";
+                        MethodInvoker miReadText = new MethodInvoker(() =>
+                        {
+                            text = txtBox.Text;
+                        });
+                        this.Invoke(miReadText);
+
                         using (FileStream outFile = File.Create(location))
                         {
-                            txtBox.SaveFile(location, RichTextBoxStreamType.RichText);
+                            var bytes = Encoding.UTF8.GetBytes(text);
+                            outFile.Write(bytes, 0, bytes.Length);
                         }
                     }
                     catch (Exception)
@@ -83,17 +97,18 @@ namespace ShortNotes
                         this.Invoke(mI);
                     }
                 }
+                else if (saved && auto) { }
                 else
                 {
                     string filename = "";
 
                     filename = name;
-                    
+
                     if (location == "")
                         filename = Convert.ToBase64String(Encoding.UTF8.GetBytes(name));
                     else
                         filename = Convert.ToBase64String(Encoding.UTF8.GetBytes(location));
-                    
+
                     if (!Directory.Exists(Path.Combine(Application.StartupPath, "tmp"))) { Directory.CreateDirectory(Path.Combine(Application.StartupPath, "tmp")); }
                     try
                     {

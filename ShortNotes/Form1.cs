@@ -23,7 +23,8 @@ namespace ShortNotes
 
         protected override void OnFormClosing(FormClosingEventArgs e)
         {
-            ((nTabPage)Tabs.SelectedTab).startBackgroundWorker();
+            ((nTabPage)Tabs.SelectedTab).startBackgroundWorker(true);
+            ResetOrder();
             if (e.CloseReason == CloseReason.WindowsShutDown)
             {
 
@@ -41,6 +42,11 @@ namespace ShortNotes
         {
             if (!this.IsHandleCreated) CreateHandle();
             base.SetVisibleCore(!onlyTray);
+        }
+        protected override void OnActivated(EventArgs e)
+        {
+            ((nTabPage)Tabs.SelectedTab).txtBox.Focus();
+            base.OnActivated(e);
         }
 
         KeyboardHook hook = new KeyboardHook(); //https://stackoverflow.com/questions/2450373/set-global-hotkeys-using-c-sharp
@@ -146,10 +152,30 @@ namespace ShortNotes
             this.DoubleBuffered = true;
             this.SetStyle(ControlStyles.ResizeRedraw, true);
             Tabs.Padding = new Point(0, 0);
-
+            int sel = 0;
             if (!clean)
             {
-                //!!! load last files here
+                //loading last files here
+                if (System.IO.File.Exists(Path.Combine(Path.Combine(Application.StartupPath, "tmp"), "index")))
+                {
+                    int i = 0;
+                    using (var filestream = System.IO.File.OpenRead(Path.Combine(Path.Combine(Application.StartupPath, "tmp"), "index")))
+                    using (var streamReader = new StreamReader(filestream, Encoding.ASCII, true))
+                    {
+                        string line;
+                        while ((line = streamReader.ReadLine()) != null)
+                        {
+                            string[] args = line.Split("|||");
+                            bool a = false;
+                            bool b = false;
+                            if (args[2] == "True") a = true;
+                            if (args[3] == "True") b = true;
+                            if (args[4] == "True") sel = i;
+                            newTab(true, args[0], args[1], a, b);//!!!
+                            i++;
+                        }
+                    }
+                }
             }
             else if (!silent)
             {
@@ -162,10 +188,11 @@ namespace ShortNotes
                 newTab();
             }
 
-            lastTabIndex = Tabs.Controls.IndexOf(Tabs.SelectedTab);
 
             this.KeyPreview = true;
-
+            lastTabIndex = sel;
+            Tabs.SelectTab(Tabs.TabPages[sel]);
+            ((nTabPage)Tabs.TabPages[sel]).txtBox.Focus();
         }
 
         private void Startup_Click(object sender, EventArgs e)
@@ -327,7 +354,7 @@ namespace ShortNotes
 
         private void Tabs_SelectedIndexChanged(object sender, EventArgs e)
         {
-            if (!((nTabPage)Tabs.SelectedTab).saved || !silent) { ((nTabPage)Tabs.TabPages[lastTabIndex]).startBackgroundWorker(); }
+            if ((!((nTabPage)Tabs.SelectedTab).saved || !silent) && Tabs.TabCount != lastTabIndex) { ((nTabPage)Tabs.TabPages[lastTabIndex]).startBackgroundWorker(true); }
 
             ((nTabPage)Tabs.SelectedTab).txtBox.Focus();
             lastTabIndex = Tabs.Controls.IndexOf(Tabs.SelectedTab);
@@ -414,7 +441,7 @@ namespace ShortNotes
                 if (!((nTabPage)Tabs.SelectedTab).saved)
                 {
                     var msg = MessageBox.Show($"Do you want to save {Tabs.SelectedTab.Name}?", $"Save {Tabs.SelectedTab.Name}?", MessageBoxButtons.YesNoCancel, MessageBoxIcon.Question, MessageBoxDefaultButton.Button2);
-                    if (msg == DialogResult.OK)
+                    if (msg == DialogResult.Yes)
                     {
                         ((nTabPage)Tabs.SelectedTab).saveNow();
                     }
@@ -467,7 +494,7 @@ namespace ShortNotes
             }
         }
 
-        private void newTab(string name = "", string location = "")
+        private void newTab(bool tmpLoad = false, string name = "", string location = "", bool isSaved = true, bool isEncrypted = false)
         {
             #region Right Click Menu for TextBox
             var contextMenu = new ContextMenuStrip();
@@ -513,7 +540,28 @@ namespace ShortNotes
             #endregion
 
             #region TabPage
-            if (location == "")
+
+            if (tmpLoad && (location == "" ||  !isSaved))
+            {
+                string filename;
+                if (location == "")
+                    filename = Convert.ToBase64String(Encoding.UTF8.GetBytes(name));
+                else
+                    filename = Convert.ToBase64String(Encoding.UTF8.GetBytes(location));
+                byte[] buf = new byte[1024];
+                int c;
+                if (System.IO.File.Exists(Path.Combine(Path.Combine(Application.StartupPath, "tmp"), filename)))
+                {
+                    using (FileStream fs = System.IO.File.OpenRead(Path.Combine(Path.Combine(Application.StartupPath, "tmp"), filename)))
+                    {
+                        while ((c = fs.Read(buf, 0, buf.Length)) > 0)
+                        {
+                            txtBox.AppendText(Encoding.ASCII.GetString(buf, 0, c));
+                        }
+                    }
+                }
+            }
+            else if (location == "")
                 txtBox.Text = "\n\n\n\n\n\n\n\n\n\n";
             else
             {
@@ -548,6 +596,8 @@ namespace ShortNotes
             var nTab = new nTabPage();
             nTab.name = name;
             nTab.location = location;
+            nTab.saved = isSaved;
+            nTab.enc = isEncrypted;
             nTab.BackColor = Color.Black;
             nTab.BorderStyle = BorderStyle.None;
             nTab.txtBox = txtBox;
@@ -560,15 +610,21 @@ namespace ShortNotes
 
             Tabs.Controls.Add(nTab);
             Tabs.SelectTab(Tabs.TabCount - 1);
-            Tabs.SelectedTab.Controls.Find("txtBox", false).First().Focus();
+            ((nTabPage)Tabs.SelectedTab).txtBox.Focus();
         }
 
         private void ResetOrder()
         {
-            //!!! create index file: name, location, enc
+            //create index file: name, location, isSaved, isEncrypted, isSelected
             if (!silent)
             {
-                
+                using (var sw = new StreamWriter(Path.Combine(Path.Combine(Application.StartupPath, "tmp"), "index"), false))
+                {
+                    for (int i = 0; i < Tabs.TabCount; i++)
+                    {
+                        sw.WriteLine($"{((nTabPage)Tabs.TabPages[i]).name}|||{((nTabPage)Tabs.TabPages[i]).location}|||{((nTabPage)Tabs.TabPages[i]).saved}|||{((nTabPage)Tabs.TabPages[i]).enc}|||{(Tabs.SelectedIndex == i)}");
+                    }
+                }
             }
         }
 
@@ -605,7 +661,7 @@ namespace ShortNotes
                         }
                     }
                     if (neww)
-                        newTab("", file);
+                        newTab(false, "", file);
                 }
         }
 
