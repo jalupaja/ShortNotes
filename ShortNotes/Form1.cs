@@ -187,7 +187,7 @@ namespace ShortNotes
             SearchUpdates.Text = "Search for updates";
             SearchUpdates.Click += SearchUpdates_Click;
             int offlineVersion = Int16.Parse(Application.ProductVersion.Replace(".", "").Replace("v", ""));
-            int onlineVersion = Int16.Parse(new WebClient().DownloadString("https://raw.githubusercontent.com/jalupaja/ShorNotes/main/ShortNotes/VersionNumber.txt"));
+            int onlineVersion = Int16.Parse(new WebClient().DownloadString("https://raw.githubusercontent.com/jalupaja/ShortNotes/main/ShortNotes/VersionNumber.txt"));
             if (offlineVersion < onlineVersion)
             {
                 SearchUpdates.Text = "Install update";

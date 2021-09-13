@@ -11,11 +11,6 @@
 
 # ToDo:
 
-- fix: create folder on first start rather then on first save
-- fix: -h
-- fix: -c
-
-- add Updater
 - add more Strg Z events
 - Strg + R from file reload (if changes: ask )
 - auto tab(einrücken)
