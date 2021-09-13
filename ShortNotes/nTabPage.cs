@@ -109,7 +109,6 @@ namespace ShortNotes
                     else
                         filename = Convert.ToBase64String(Encoding.UTF8.GetBytes(location));
 
-                    if (!Directory.Exists(Path.Combine(Application.StartupPath, "tmp"))) { Directory.CreateDirectory(Path.Combine(Application.StartupPath, "tmp")); }
                     try
                     {
                         string text = "";

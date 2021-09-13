@@ -4,6 +4,9 @@
     <OutputType>WinExe</OutputType>
     <TargetFramework>net5.0-windows</TargetFramework>
     <UseWindowsForms>true</UseWindowsForms>
+    <Authors>jalupa</Authors>
+    <PackageProjectUrl>https://github.com/jalupaja/ShortNotes</PackageProjectUrl>
+    <Copyright>Copyright © jalupa 2021</Copyright>
   </PropertyGroup>
 
   <ItemGroup>
@@ -31,6 +34,12 @@
       <Generator>ResXFileCodeGenerator</Generator>
       <LastGenOutput>Resources.Designer.cs</LastGenOutput>
     </EmbeddedResource>
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="Updater.exe">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
 
 </Project>

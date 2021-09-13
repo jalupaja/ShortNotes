@@ -39,7 +39,6 @@ namespace ShortNotes
                     }
                 }
             }
-
             Application.Run(app);
         }
     }

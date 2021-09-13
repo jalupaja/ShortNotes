@@ -11,6 +11,8 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 using Microsoft.Win32;
 using IWshRuntimeLibrary;
+using System.Net;
+using System.Diagnostics;
 
 namespace ShortNotes
 {
@@ -23,7 +25,7 @@ namespace ShortNotes
 
         protected override void OnFormClosing(FormClosingEventArgs e)
         {
-            ((nTabPage)Tabs.SelectedTab).startBackgroundWorker(true);
+            if (!silent) ((nTabPage)Tabs.SelectedTab).startBackgroundWorker(true);
             ResetOrder();
             if (e.CloseReason == CloseReason.WindowsShutDown)
             {
@@ -42,10 +44,51 @@ namespace ShortNotes
         {
             if (!this.IsHandleCreated) CreateHandle();
             base.SetVisibleCore(!onlyTray);
+            int sel = 0;
+            if (!clean)
+            {
+                //loading last files here
+                if (System.IO.File.Exists(Path.Combine(Path.Combine(Application.StartupPath, "tmp"), "index")))
+                {
+                    int i = 0;
+                    using (var filestream = System.IO.File.OpenRead(Path.Combine(Path.Combine(Application.StartupPath, "tmp"), "index")))
+                    using (var streamReader = new StreamReader(filestream, Encoding.ASCII, true))
+                    {
+                        string line;
+                        while ((line = streamReader.ReadLine()) != null)
+                        {
+                            string[] args = line.Split("|||");
+                            bool a = false;
+                            bool b = false;
+                            if (args[2] == "True") a = true;
+                            if (args[3] == "True") b = true;
+                            if (args[4] == "True") sel = i;
+                            newTab(true, args[0], args[1], a, b);//!!!
+                            i++;
+                        }
+                    }
+                }
+            }
+            else if (!silent)
+            {
+                foreach (string file in Directory.GetFiles(Path.Combine(Application.StartupPath, "tmp")))
+                    System.IO.File.Delete(file);
+            }
+
+            if (Tabs.TabCount == 0)
+            {
+                newTab();
+            }
+
+
+            this.KeyPreview = true;
+            lastTabIndex = sel;
+            Tabs.SelectTab(Tabs.TabPages[sel]);
+            ((nTabPage)Tabs.TabPages[sel]).txtBox.Focus();
         }
         protected override void OnActivated(EventArgs e)
         {
-            ((nTabPage)Tabs.SelectedTab).txtBox.Focus();
+            if (Tabs.TabCount > 0) { ((nTabPage)Tabs.SelectedTab).txtBox.Focus(); }
             base.OnActivated(e);
         }
 
@@ -59,6 +102,7 @@ namespace ShortNotes
         ToolStripMenuItem AlwaysOnTop = new ToolStripMenuItem();
         ToolStripMenuItem StartMenu = new ToolStripMenuItem();
         ToolStripMenuItem Startup = new ToolStripMenuItem();
+        ToolStripMenuItem SearchUpdates = new ToolStripMenuItem();
         
 
         private int lastTabIndex;
@@ -66,6 +110,8 @@ namespace ShortNotes
         public Form1()
         {
             InitializeComponent();
+
+            if (!Directory.Exists(Path.Combine(Application.StartupPath, "tmp"))) { Directory.CreateDirectory(Path.Combine(Application.StartupPath, "tmp")); }
 
             hook.RegisterHotKey(global::ModifierKeys.Control, Keys.OemPeriod);
             hook.KeyPressed += new EventHandler<KeyPressedEventArgs>(hook_KeyPressed);
@@ -138,6 +184,15 @@ namespace ShortNotes
                 Startup.Text = "Create Startup entry";
             Startup.Click += Startup_Click;
 
+            SearchUpdates.Text = "Search for updates";
+            SearchUpdates.Click += SearchUpdates_Click;
+            int offlineVersion = Int16.Parse(Application.ProductVersion.Replace(".", "").Replace("v", ""));
+            int onlineVersion = Int16.Parse(new WebClient().DownloadString("https://raw.githubusercontent.com/jalupaja/ShorNotes/main/ShortNotes/VersionNumber.txt"));
+            if (offlineVersion < onlineVersion)
+            {
+                SearchUpdates.Text = "Install update";
+            }
+
             //!!!
 
             contextMenuTop.Items.AddRange(new ToolStripItem[]
@@ -152,47 +207,22 @@ namespace ShortNotes
             this.DoubleBuffered = true;
             this.SetStyle(ControlStyles.ResizeRedraw, true);
             Tabs.Padding = new Point(0, 0);
-            int sel = 0;
-            if (!clean)
-            {
-                //loading last files here
-                if (System.IO.File.Exists(Path.Combine(Path.Combine(Application.StartupPath, "tmp"), "index")))
-                {
-                    int i = 0;
-                    using (var filestream = System.IO.File.OpenRead(Path.Combine(Path.Combine(Application.StartupPath, "tmp"), "index")))
-                    using (var streamReader = new StreamReader(filestream, Encoding.ASCII, true))
-                    {
-                        string line;
-                        while ((line = streamReader.ReadLine()) != null)
-                        {
-                            string[] args = line.Split("|||");
-                            bool a = false;
-                            bool b = false;
-                            if (args[2] == "True") a = true;
-                            if (args[3] == "True") b = true;
-                            if (args[4] == "True") sel = i;
-                            newTab(true, args[0], args[1], a, b);//!!!
-                            i++;
-                        }
-                    }
-                }
-            }
-            else if (!silent)
-            {
-                foreach (string file in Directory.GetFiles(Path.Combine(Application.StartupPath, "tmp")))
-                    System.IO.File.Delete(file);
-            }
-
-            if (Tabs.TabCount == 0)
-            {
-                newTab();
-            }
-
 
             this.KeyPreview = true;
-            lastTabIndex = sel;
-            Tabs.SelectTab(Tabs.TabPages[sel]);
-            ((nTabPage)Tabs.TabPages[sel]).txtBox.Focus();
+        }
+
+        private void SearchUpdates_Click(object sender, EventArgs e)
+        {
+            int offlineVersion = Int16.Parse(Application.ProductVersion.Replace(".", "").Replace("v", ""));
+            int onlineVersion = Int16.Parse(new WebClient().DownloadString("https://raw.githubusercontent.com/jalupaja/ShortNotes/main/ShortNotes/VersionNumber.txt"));
+            if (offlineVersion < onlineVersion)
+            {
+                try
+                {
+                    Process.Start("Updater.exe", "\"https://github.com/jalupaja/ShortNotes/releases/latest/download/ShortNotes.zip\" question");
+                }
+                catch (Exception) { }
+            }
         }
 
         private void Startup_Click(object sender, EventArgs e)
@@ -354,7 +384,7 @@ namespace ShortNotes
 
         private void Tabs_SelectedIndexChanged(object sender, EventArgs e)
         {
-            if ((!((nTabPage)Tabs.SelectedTab).saved || !silent) && Tabs.TabCount != lastTabIndex) { ((nTabPage)Tabs.TabPages[lastTabIndex]).startBackgroundWorker(true); }
+            if (!((nTabPage)Tabs.SelectedTab).saved && !silent && Tabs.TabCount != lastTabIndex) { ((nTabPage)Tabs.TabPages[lastTabIndex]).startBackgroundWorker(true); }
 
             ((nTabPage)Tabs.SelectedTab).txtBox.Focus();
             lastTabIndex = Tabs.Controls.IndexOf(Tabs.SelectedTab);
@@ -436,8 +466,25 @@ namespace ShortNotes
                 ResetOrder();
                 e.SuppressKeyPress = true;
             }
-            else if (e.Control && e.KeyCode == Keys.W)
+            else if (e.Control && e.KeyCode == Keys.W )
             {
+                if (silent)
+                {
+                    int i = Tabs.SelectedIndex;
+                    var t = Tabs.SelectedTab;
+                    if (Tabs.TabCount == 1)
+                    {
+                        newTab();
+                    }
+                    Tabs.Controls.Remove(t);
+
+                    if (i == 0)
+                        Tabs.SelectedIndex = 0;
+                    else
+                        Tabs.SelectedIndex = i - 1;
+                    e.SuppressKeyPress = true;
+                    return;
+                }
                 if (!((nTabPage)Tabs.SelectedTab).saved)
                 {
                     var msg = MessageBox.Show($"Do you want to save {Tabs.SelectedTab.Name}?", $"Save {Tabs.SelectedTab.Name}?", MessageBoxButtons.YesNoCancel, MessageBoxIcon.Question, MessageBoxDefaultButton.Button2);
