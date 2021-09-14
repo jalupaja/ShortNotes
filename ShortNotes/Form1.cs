@@ -23,6 +23,8 @@ namespace ShortNotes
         public bool clean = false;
         public bool silent = false;
 
+        private string searchTxt = "";
+
         protected override void OnFormClosing(FormClosingEventArgs e)
         {
             if (!silent) ((nTabPage)Tabs.SelectedTab).startBackgroundWorker(true);
@@ -103,8 +105,8 @@ namespace ShortNotes
         ToolStripMenuItem StartMenu = new ToolStripMenuItem();
         ToolStripMenuItem Startup = new ToolStripMenuItem();
         ToolStripMenuItem SearchUpdates = new ToolStripMenuItem();
-        
 
+        private bool searchAll = false;
         private int lastTabIndex;
 
         public Form1()
@@ -299,7 +301,7 @@ namespace ShortNotes
                 {
                     System.IO.File.Delete(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonStartMenu), "Programs", "ShortNotes", "ShortNotes" + ".lnk"));
                     Directory.Delete(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonStartMenu), "Programs", "ShortNotes"), false); // Dont delete folder if another program uses it
-                } 
+                }
                 catch (Exception)
                 { }
             }
@@ -328,7 +330,7 @@ namespace ShortNotes
         {
             if (onlyTray || Focused || ((nTabPage)Tabs.SelectedTab).txtBox.Focused)
                 TrayShow(null, null);
-            else 
+            else
                 this.Activate();
         }
 
@@ -499,7 +501,7 @@ namespace ShortNotes
                 ResetOrder();
                 e.SuppressKeyPress = true;
             }
-            else if (e.Control && e.KeyCode == Keys.W )
+            else if (e.Control && e.KeyCode == Keys.W)
             {
                 if (silent)
                 {
@@ -564,13 +566,30 @@ namespace ShortNotes
                 ResetOrder();
                 e.SuppressKeyPress = true;
             }
-            else if (e.Control && e.Shift && e.KeyCode == Keys.F) 
-            { 
-                //!!!
+            else if (e.Control && e.Shift && e.KeyCode == Keys.F)
+            {
+                searchAll = true;
+                sTxt.Text = searchTxt;
+                sTxt.Visible = true;
+                sTxt.Focus();
+                sTxt.SelectAll();
+                searchText_TextChanged(null, null);
+                e.SuppressKeyPress = true;
             }
-            else if (e.Control && e.KeyCode == Keys.F) 
-            { 
-                //!!!
+            else if (e.Control && e.KeyCode == Keys.F)
+            {
+                searchAll = false;
+                sTxt.Text = searchTxt;
+                sTxt.Visible = true;
+                sTxt.Focus();
+                sTxt.SelectAll();
+                searchText_TextChanged(null, null);
+                e.SuppressKeyPress = true;
+            }
+            else if (e.Control && e.KeyCode == Keys.R)
+            {
+                ((nTabPage)Tabs.SelectedTab).Reload();
+                e.SuppressKeyPress = true;
             }
         }
 
@@ -620,8 +639,7 @@ namespace ShortNotes
             #endregion
 
             #region TabPage
-
-            if (tmpLoad && (location == "" ||  !isSaved))
+            if (tmpLoad && (location == "" || !isSaved))
             {
                 string filename;
                 if (location == "")
@@ -790,6 +808,107 @@ namespace ShortNotes
                 e.Effect = DragDropEffects.Move;
             else
                 e.Effect = DragDropEffects.None;
+        }
+
+        private void searchText_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.KeyCode == Keys.Escape)
+            {
+                sTxt.Visible = false;
+                e.SuppressKeyPress = true;
+                ((nTabPage)Tabs.SelectedTab).txtBox.Focus();
+                foreach (nTabPage page in Tabs.TabPages)
+                {
+                    page.txtBox.SelectionStart = 0;
+                    page.txtBox.SelectionLength = page.txtBox.TextLength;
+                    page.txtBox.SelectionBackColor = Color.Black;
+                }
+            }
+            else if (e.KeyCode == Keys.Enter)
+            {
+                searchTxt = sTxt.Text;
+                sTxt.Visible = false;
+                e.SuppressKeyPress = true;
+                ((nTabPage)Tabs.SelectedTab).txtBox.Focus();
+                searchText_TextChanged(null, null);
+            }
+        }
+
+        private void searchText_TextChanged(object sender, EventArgs e)
+        {
+            foreach (nTabPage page in Tabs.TabPages)
+            {
+                page.txtBox.SelectionStart = 0;
+                page.txtBox.SelectionLength = page.txtBox.TextLength;
+                page.txtBox.SelectionBackColor = Color.Black;
+            }
+            if (sTxt.Text == "")
+            {
+                return;
+            }
+            if (searchAll)
+            {
+                bool[] s = new bool[Tabs.TabCount];
+                foreach (nTabPage page in Tabs.TabPages)
+                {
+                    page.txtBox.SelectionStart = 0;
+                    page.txtBox.SelectionLength = page.txtBox.TextLength;
+                    page.txtBox.SelectionBackColor = Color.Black;
+
+                    int startIndex = 0;
+                    while (startIndex < page.txtBox.TextLength)
+                    {
+                        //Find word & return index
+                        int wordStartIndex = page.txtBox.Find(sTxt.Text, startIndex, RichTextBoxFinds.None);
+                        if (wordStartIndex != -1)
+                        {
+                            //Highlight text in a richtextbox
+                            page.txtBox.SelectionStart = wordStartIndex;
+                            page.txtBox.SelectionLength = sTxt.Text.Length;
+                            page.txtBox.SelectionBackColor = Color.Yellow;
+                            s[Tabs.Controls.IndexOf(page)] = true;
+                        }
+                        else
+                            break;
+                        startIndex += wordStartIndex + sTxt.Text.Length;
+                    }
+
+                    if (!s[Tabs.Controls.IndexOf(Tabs.SelectedTab)])
+                    {
+                        int j = Tabs.Controls.IndexOf(Tabs.SelectedTab);
+                        for (int i = 0; i < Tabs.TabCount - 1; i++)
+                        {
+                            j++;
+                            if (j == Tabs.TabCount) j = 0;
+                            if (s[j])
+                            {
+                                Tabs.SelectedTab = Tabs.TabPages[j];
+                                sTxt.Focus();
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+            else
+            {
+                int startIndex = 0;
+                while (startIndex < ((nTabPage)Tabs.SelectedTab).txtBox.TextLength)
+                {
+                    //Find word & return index
+                    int wordStartIndex = ((nTabPage)Tabs.SelectedTab).txtBox.Find(sTxt.Text, startIndex, RichTextBoxFinds.None);
+                    if (wordStartIndex != -1)
+                    {
+                        //Highlight text in a richtextbox
+                        ((nTabPage)Tabs.SelectedTab).txtBox.SelectionStart = wordStartIndex;
+                        ((nTabPage)Tabs.SelectedTab).txtBox.SelectionLength = sTxt.Text.Length;
+                        ((nTabPage)Tabs.SelectedTab).txtBox.SelectionBackColor = Color.Yellow;
+                    }
+                    else
+                        break;
+                    startIndex += wordStartIndex + sTxt.Text.Length;
+                }
+            }
         }
     }
 }

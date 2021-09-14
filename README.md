@@ -11,16 +11,14 @@
 
 # ToDo:
 
-- add more Strg Z events
-- Strg + R from file reload (if changes: ask )
-- auto tab(einrücken)
+- on page focus: if (saved) see if file changed, ask for reload
+- on page focus: if (saved) see if file exists, ask for delete
+- auto indent
 - option to encrypt page (Hotkey?)
-- search on page/ all pages (Strg F/ Strg Shift F -> creates new textwindow, focus textwindow, search on Enter)
 - enable, disable WordWrap (horizontal scrolling)
 - DragDrop Tabs (outside -> new window)
 - fix DragDrop between Tabs
 - change encoding (by reading text to bytes and back to text txtBox.AppendText(Encoding.ASCII.GetString))
-- Icon
 
 
 # Usage:
@@ -56,5 +54,6 @@ local Hotkeys  | Function
 (Strg + W)	   | close tab
 (Strg + F)	   | search tab
 (Strg+Shift+F) | search all tabs
+(Strg + R)	   | reload tab
 
 

@@ -5,6 +5,7 @@ using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
@@ -18,6 +19,7 @@ namespace ShortNotes
         public RichTextBox txtBox;
         public bool enc = false;
         private bool auto = false;
+        private bool adding = false;
 
         private string tmpName;
         private BackgroundWorker backgroundWorker;
@@ -67,8 +69,7 @@ namespace ShortNotes
             {
                 if (saved && location != "" && !auto)
                 {
-                    try
-                    {
+                    
 
                         string text = "";
                         MethodInvoker miReadText = new MethodInvoker(() =>
@@ -81,7 +82,7 @@ namespace ShortNotes
                         {
                             var bytes = Encoding.UTF8.GetBytes(text);
                             outFile.Write(bytes, 0, bytes.Length);
-                        }
+                        }/*
                     }
                     catch (Exception)
                     {
@@ -95,7 +96,7 @@ namespace ShortNotes
                             Text = name + "*";
                         });
                         this.Invoke(mI);
-                    }
+                    }*/
                 }
                 else if (saved && auto) { }
                 else
@@ -131,6 +132,11 @@ namespace ShortNotes
 
         private void TxtBox_TextChanged(object sender, EventArgs e)
         {
+            if (adding)
+            {
+                adding = false;
+                return;
+            }
             saved = false;
             Text = name + "*";
         }
@@ -164,6 +170,45 @@ namespace ShortNotes
                 Text = name;
                 startBackgroundWorker();
             }
+        }
+        public void Reload()
+        {
+            if (location == "")
+                return;
+            if (!File.Exists(location))
+                return; //!!! ask 
+            string l = location;
+            if (!saved)
+            {
+                var msg = MessageBox.Show("There are unsaved changes. Do you want to save to file before reloading?", "save before reload file", MessageBoxButtons.YesNoCancel, MessageBoxIcon.Question, MessageBoxDefaultButton.Button2);
+                if (msg == DialogResult.Yes)
+                {
+                    saveNow(true);
+                    if (!saved)
+                        return;
+                }
+                else if (msg == DialogResult.Cancel)
+                    return;
+            }
+            while (backgroundWorker.IsBusy)
+                Application.DoEvents();
+            adding = true;
+            txtBox.Clear();
+            byte[] buf = new byte[1024];
+            int c;
+            using (FileStream fs = File.OpenRead(l))
+            {
+                while ((c = fs.Read(buf, 0, buf.Length)) > 0)
+                {
+                    adding = true;
+                    txtBox.AppendText(Encoding.ASCII.GetString(buf, 0, c));
+                }
+            }
+            location = l;
+            name = Path.GetFileName(l);
+            saved = true;
+            Text = name;
+            Name = name;
         }
     }
 }

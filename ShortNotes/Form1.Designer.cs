@@ -29,10 +29,12 @@ namespace ShortNotes
         /// </summary>
         private void InitializeComponent()
         {
+            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(Form1));
             this.BtnExit = new System.Windows.Forms.Button();
             this.BtnMinimize = new System.Windows.Forms.Button();
             this.Tabs = new ShortNotes.nTabControl();
             this.backgroundWorker1 = new System.ComponentModel.BackgroundWorker();
+            this.sTxt = new System.Windows.Forms.TextBox();
             this.SuspendLayout();
             // 
             // BtnExit
@@ -82,16 +84,30 @@ namespace ShortNotes
             this.Tabs.DragEnter += new System.Windows.Forms.DragEventHandler(this.Tabs_DragEnter);
             this.Tabs.MouseMove += new System.Windows.Forms.MouseEventHandler(this.Tabs_MouseMove);
             // 
+            // sTxt
+            // 
+            this.sTxt.BackColor = System.Drawing.Color.Black;
+            this.sTxt.ForeColor = System.Drawing.Color.White;
+            this.sTxt.Location = new System.Drawing.Point(123, 2);
+            this.sTxt.Name = "sTxt";
+            this.sTxt.Size = new System.Drawing.Size(132, 23);
+            this.sTxt.TabIndex = 3;
+            this.sTxt.Visible = false;
+            this.sTxt.TextChanged += new System.EventHandler(this.searchText_TextChanged);
+            this.sTxt.KeyDown += new System.Windows.Forms.KeyEventHandler(this.searchText_KeyDown);
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 15F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.BackColor = System.Drawing.Color.Black;
             this.ClientSize = new System.Drawing.Size(395, 499);
+            this.Controls.Add(this.sTxt);
             this.Controls.Add(this.Tabs);
             this.Controls.Add(this.BtnMinimize);
             this.Controls.Add(this.BtnExit);
             this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.None;
+            this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
             this.Name = "Form1";
             this.StartPosition = System.Windows.Forms.FormStartPosition.Manual;
             this.Text = "ShortNotes";
@@ -99,6 +115,7 @@ namespace ShortNotes
             this.Load += new System.EventHandler(this.Form1_Load);
             this.KeyDown += new System.Windows.Forms.KeyEventHandler(this.Form1_KeyDown);
             this.ResumeLayout(false);
+            this.PerformLayout();
 
         }
 
@@ -108,6 +125,7 @@ namespace ShortNotes
         private System.Windows.Forms.Button BtnMinimize;
         private nTabControl Tabs;
         private System.ComponentModel.BackgroundWorker backgroundWorker1;
+        private System.Windows.Forms.TextBox sTxt;
     }
 }
 
