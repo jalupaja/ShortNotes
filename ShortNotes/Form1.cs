@@ -106,7 +106,7 @@ namespace ShortNotes
         ToolStripMenuItem Startup = new ToolStripMenuItem();
         ToolStripMenuItem SearchUpdates = new ToolStripMenuItem();
 
-        private bool searchAll = false;
+        private string TxtMode = "";
         private int lastTabIndex;
 
         public Form1()
@@ -568,7 +568,7 @@ namespace ShortNotes
             }
             else if (e.Control && e.Shift && e.KeyCode == Keys.F)
             {
-                searchAll = true;
+                TxtMode = "searchAll";
                 sTxt.Text = searchTxt;
                 sTxt.Visible = true;
                 sTxt.Focus();
@@ -578,7 +578,7 @@ namespace ShortNotes
             }
             else if (e.Control && e.KeyCode == Keys.F)
             {
-                searchAll = false;
+                TxtMode = "search";
                 sTxt.Text = searchTxt;
                 sTxt.Visible = true;
                 sTxt.Focus();
@@ -589,6 +589,11 @@ namespace ShortNotes
             else if (e.Control && e.KeyCode == Keys.R)
             {
                 ((nTabPage)Tabs.SelectedTab).Reload();
+                e.SuppressKeyPress = true;
+            }
+            else if (e.Control && e.KeyCode == Keys.E)
+            {
+                MenuCrypt_Click(null, null);
                 e.SuppressKeyPress = true;
             }
         }
@@ -611,11 +616,39 @@ namespace ShortNotes
             MenuCopyFilePath.Text = "Copy filepath";
             MenuCopyFilePath.Click += MenuCopyFilePath_Click;
 
+            ToolStripMenuItem MenuCrypt = new ToolStripMenuItem();
+            MenuCrypt.Text = "En/ Decrypt Tab";
+            MenuCrypt.Click += MenuCrypt_Click;
+
+            ToolStripMenuItem ColorWhite = new ToolStripMenuItem();
+            ColorWhite.Text = "White";
+            ColorWhite.Click += this.ColorWhite;
+            ToolStripMenuItem ColorRed = new ToolStripMenuItem();
+            ColorRed.Text = "Red";
+            ColorRed.Click += this.ColorRed;
+            ToolStripMenuItem ColorGreen = new ToolStripMenuItem();
+            ColorGreen.Text = "Green";
+            ColorGreen.Click += this.ColorGreen;
+            ToolStripMenuItem ColorYellow = new ToolStripMenuItem();
+            ColorYellow.Text = "Yellow";
+            ColorYellow.Click += this.ColorYellow;
+            ToolStripMenuItem ColorBlack = new ToolStripMenuItem();
+            ColorBlack.Text = "Black";
+            ColorBlack.Click += this.ColorBlack;
+            var MenuColorDropDown = new ToolStripDropDown();
+            MenuColorDropDown.AutoClose = true;
+            MenuColorDropDown.Items.AddRange(new ToolStripItem[]
+            {
+                ColorWhite, ColorRed, ColorGreen, ColorYellow, ColorBlack
+            });
+            ToolStripDropDownItem MenuColor = new ToolStripMenuItem();
+            MenuColor.Text = "Change color to";
+            MenuColor.DropDown = MenuColorDropDown;
             //!!!
 
             contextMenu.Items.AddRange(new ToolStripItem[]
             {
-                MenuSaveAs, MenuCopyFilePath
+                MenuSaveAs, MenuCrypt, MenuCopyFilePath, MenuColor
             });
             contextMenu.ResumeLayout(false);
             #endregion
@@ -660,7 +693,10 @@ namespace ShortNotes
                 }
             }
             else if (location == "")
+            {
                 txtBox.Text = "\n\n\n\n\n\n\n\n\n\n";
+                isSaved = false;
+            }
             else
             {
                 name = Path.GetFileName(location);
@@ -706,9 +742,61 @@ namespace ShortNotes
             nTab.Init();
             #endregion
 
+            
             Tabs.Controls.Add(nTab);
             Tabs.SelectTab(Tabs.TabCount - 1);
             ((nTabPage)Tabs.SelectedTab).txtBox.Focus();
+        }
+
+        #region Color Text
+        private void ColorBlack(object sender, EventArgs e)
+        {
+            ((nTabPage)Tabs.SelectedTab).txtBox.SelectionColor = Color.Black;
+        }
+
+        private void ColorYellow(object sender, EventArgs e)
+        {
+            ((nTabPage)Tabs.SelectedTab).txtBox.SelectionColor = Color.Yellow;
+        }
+
+        private void ColorGreen(object sender, EventArgs e)
+        {
+            ((nTabPage)Tabs.SelectedTab).txtBox.SelectionColor = Color.Green;
+        }
+
+        private void ColorRed(object sender, EventArgs e)
+        {
+            ((nTabPage)Tabs.SelectedTab).txtBox.SelectionColor = Color.Red;
+        }
+
+        private void ColorWhite(object sender, EventArgs e)
+        {
+            ((nTabPage)Tabs.SelectedTab).txtBox.SelectionColor = Color.White;
+        }
+        #endregion
+
+        private void MenuCrypt_Click(object sender, EventArgs e)
+        {
+            if (!((nTabPage)Tabs.SelectedTab).enc)
+            {
+                TxtMode = "Encrypt";
+                sTxt.Text = "";
+                sTxt.Visible = true;
+                sTxt.Focus();
+                sTxt.UseSystemPasswordChar = true;
+                searchText_TextChanged(null, null);
+            }
+            else if (((nTabPage)Tabs.SelectedTab).decRn)
+                ((nTabPage)Tabs.SelectedTab).EnCrypt();
+            else if (!((nTabPage)Tabs.SelectedTab).decRn)
+            {
+                TxtMode = "Decrypt";
+                sTxt.Text = "";
+                sTxt.Visible = true;
+                sTxt.Focus();
+                sTxt.UseSystemPasswordChar = true;
+                searchText_TextChanged(null, null);
+            }
         }
 
         private void ResetOrder()
@@ -817,96 +905,121 @@ namespace ShortNotes
                 sTxt.Visible = false;
                 e.SuppressKeyPress = true;
                 ((nTabPage)Tabs.SelectedTab).txtBox.Focus();
-                foreach (nTabPage page in Tabs.TabPages)
+                if (TxtMode == "search" || TxtMode == "searchAll")
                 {
-                    page.txtBox.SelectionStart = 0;
-                    page.txtBox.SelectionLength = page.txtBox.TextLength;
-                    page.txtBox.SelectionBackColor = Color.Black;
+                    foreach (nTabPage page in Tabs.TabPages)
+                    {
+                        page.txtBox.SelectionStart = 0;
+                        page.txtBox.SelectionLength = page.txtBox.TextLength;
+                        page.txtBox.SelectionBackColor = Color.Black;
+                    }
                 }
+                else if (TxtMode == "Encrypt" || TxtMode == "Decrypt")
+                    sTxt.UseSystemPasswordChar = false;
             }
             else if (e.KeyCode == Keys.Enter)
             {
-                searchTxt = sTxt.Text;
+                if (TxtMode == "search" || TxtMode == "searchAll")
+                    searchTxt = sTxt.Text;
                 sTxt.Visible = false;
                 e.SuppressKeyPress = true;
                 ((nTabPage)Tabs.SelectedTab).txtBox.Focus();
                 searchText_TextChanged(null, null);
+                if (TxtMode == "Encrypt" && !((nTabPage)Tabs.SelectedTab).enc)
+                {
+                    string filename = "";
+                    if (((nTabPage)Tabs.SelectedTab).location == "")
+                        filename = Convert.ToBase64String(Encoding.UTF8.GetBytes(((nTabPage)Tabs.SelectedTab).name));
+                    else
+                        filename = Convert.ToBase64String(Encoding.UTF8.GetBytes(((nTabPage)Tabs.SelectedTab).location));
+                    System.IO.File.Delete(Path.Combine(Path.Combine(Application.StartupPath, "tmp"), filename));
+                    ((nTabPage)Tabs.SelectedTab).EnCrypt(sTxt.Text);
+                }
+                else if (TxtMode == "Decrypt")
+                    ((nTabPage)Tabs.SelectedTab).Decrypt(sTxt.Text);
+                if (TxtMode == "Encrypt" || TxtMode == "Decrypt")
+                    sTxt.UseSystemPasswordChar = false;
             }
         }
 
         private void searchText_TextChanged(object sender, EventArgs e)
         {
-            foreach (nTabPage page in Tabs.TabPages)
+            if (TxtMode == "Encrypt" || TxtMode == "Decrypt")
+                ;
+            else if (TxtMode == "search" || TxtMode == "searchAll")
             {
-                page.txtBox.SelectionStart = 0;
-                page.txtBox.SelectionLength = page.txtBox.TextLength;
-                page.txtBox.SelectionBackColor = Color.Black;
-            }
-            if (sTxt.Text == "")
-            {
-                return;
-            }
-            if (searchAll)
-            {
-                bool[] s = new bool[Tabs.TabCount];
                 foreach (nTabPage page in Tabs.TabPages)
                 {
                     page.txtBox.SelectionStart = 0;
                     page.txtBox.SelectionLength = page.txtBox.TextLength;
                     page.txtBox.SelectionBackColor = Color.Black;
+                }
+                if (sTxt.Text == "")
+                {
+                    return;
+                }
+                if (TxtMode == "searchAll")
+                {
+                    bool[] s = new bool[Tabs.TabCount];
+                    foreach (nTabPage page in Tabs.TabPages)
+                    {
+                        page.txtBox.SelectionStart = 0;
+                        page.txtBox.SelectionLength = page.txtBox.TextLength;
+                        page.txtBox.SelectionBackColor = Color.Black;
 
+                        int startIndex = 0;
+                        while (startIndex < page.txtBox.TextLength)
+                        {
+                            //Find word & return index
+                            int wordStartIndex = page.txtBox.Find(sTxt.Text, startIndex, RichTextBoxFinds.None);
+                            if (wordStartIndex != -1)
+                            {
+                                //Highlight text in a richtextbox
+                                page.txtBox.SelectionStart = wordStartIndex;
+                                page.txtBox.SelectionLength = sTxt.Text.Length;
+                                page.txtBox.SelectionBackColor = Color.Yellow;
+                                s[Tabs.Controls.IndexOf(page)] = true;
+                            }
+                            else
+                                break;
+                            startIndex += wordStartIndex + sTxt.Text.Length;
+                        }
+
+                        if (!s[Tabs.Controls.IndexOf(Tabs.SelectedTab)])
+                        {
+                            int j = Tabs.Controls.IndexOf(Tabs.SelectedTab);
+                            for (int i = 0; i < Tabs.TabCount - 1; i++)
+                            {
+                                j++;
+                                if (j == Tabs.TabCount) j = 0;
+                                if (s[j])
+                                {
+                                    Tabs.SelectedTab = Tabs.TabPages[j];
+                                    sTxt.Focus();
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                }
+                else if (TxtMode == "searchAll")
+                {
                     int startIndex = 0;
-                    while (startIndex < page.txtBox.TextLength)
+                    while (startIndex < ((nTabPage)Tabs.SelectedTab).txtBox.TextLength)
                     {
                         //Find word & return index
-                        int wordStartIndex = page.txtBox.Find(sTxt.Text, startIndex, RichTextBoxFinds.None);
+                        int wordStartIndex = ((nTabPage)Tabs.SelectedTab).txtBox.Find(sTxt.Text, startIndex, RichTextBoxFinds.None);
                         if (wordStartIndex != -1)
                         {
                             //Highlight text in a richtextbox
-                            page.txtBox.SelectionStart = wordStartIndex;
-                            page.txtBox.SelectionLength = sTxt.Text.Length;
-                            page.txtBox.SelectionBackColor = Color.Yellow;
-                            s[Tabs.Controls.IndexOf(page)] = true;
+                            ((nTabPage)Tabs.SelectedTab).txtBox.SelectionStart = wordStartIndex;
+                            ((nTabPage)Tabs.SelectedTab).txtBox.SelectionLength = sTxt.Text.Length;
+                            ((nTabPage)Tabs.SelectedTab).txtBox.SelectionBackColor = Color.Yellow;
                         }
                         else
                             break;
                         startIndex += wordStartIndex + sTxt.Text.Length;
                     }
-
-                    if (!s[Tabs.Controls.IndexOf(Tabs.SelectedTab)])
-                    {
-                        int j = Tabs.Controls.IndexOf(Tabs.SelectedTab);
-                        for (int i = 0; i < Tabs.TabCount - 1; i++)
-                        {
-                            j++;
-                            if (j == Tabs.TabCount) j = 0;
-                            if (s[j])
-                            {
-                                Tabs.SelectedTab = Tabs.TabPages[j];
-                                sTxt.Focus();
-                                break;
-                            }
-                        }
-                    }
-                }
-            }
-            else
-            {
-                int startIndex = 0;
-                while (startIndex < ((nTabPage)Tabs.SelectedTab).txtBox.TextLength)
-                {
-                    //Find word & return index
-                    int wordStartIndex = ((nTabPage)Tabs.SelectedTab).txtBox.Find(sTxt.Text, startIndex, RichTextBoxFinds.None);
-                    if (wordStartIndex != -1)
-                    {
-                        //Highlight text in a richtextbox
-                        ((nTabPage)Tabs.SelectedTab).txtBox.SelectionStart = wordStartIndex;
-                        ((nTabPage)Tabs.SelectedTab).txtBox.SelectionLength = sTxt.Text.Length;
-                        ((nTabPage)Tabs.SelectedTab).txtBox.SelectionBackColor = Color.Yellow;
-                    }
-                    else
-                        break;
-                    startIndex += wordStartIndex + sTxt.Text.Length;
                 }
             }
         }

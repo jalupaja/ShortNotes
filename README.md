@@ -11,10 +11,11 @@
 
 # ToDo:
 
+- color selected text
+- change Contextmenu "En/ Decrypt"
 - on page focus: if (saved) see if file changed, ask for reload
 - on page focus: if (saved) see if file exists, ask for delete
 - auto indent
-- option to encrypt page (Hotkey?)
 - enable, disable WordWrap (horizontal scrolling)
 - DragDrop Tabs (outside -> new window)
 - fix DragDrop between Tabs
@@ -55,5 +56,6 @@ local Hotkeys  | Function
 (Strg + F)	   | search tab
 (Strg+Shift+F) | search all tabs
 (Strg + R)	   | reload tab
+(Strg + E)	   | Encrypt/ Decrypt tab
 
 

@@ -5,9 +5,8 @@ using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
 using System.Windows.Forms;
+using System.Security.Cryptography;
 
 namespace ShortNotes
 {
@@ -18,8 +17,10 @@ namespace ShortNotes
         public string location = "";
         public RichTextBox txtBox;
         public bool enc = false;
+        public bool decRn = false;
         private bool auto = false;
         private bool adding = false;
+        protected string pw = "";
 
         private string tmpName;
         private BackgroundWorker backgroundWorker;
@@ -61,16 +62,60 @@ namespace ShortNotes
 
         private void backgroundWorker_DoWork(object sender, DoWorkEventArgs e)
         {
-            if (enc)
+            if (enc && decRn && auto)
             {
-                //!!!
+                string filename = "";
+
+                filename = name;
+
+                if (location == "")
+                    filename = Convert.ToBase64String(Encoding.UTF8.GetBytes(name));
+                else
+                    filename = Convert.ToBase64String(Encoding.UTF8.GetBytes(location));
+
+                try
+                {
+                    string text = "";
+                    MethodInvoker miReadText = new MethodInvoker(() =>
+                    {
+                        text = txtBox.Text;
+                    });
+                    this.Invoke(miReadText);
+
+                    byte[] bytes = Encoding.Unicode.GetBytes(text);
+                    SymmetricAlgorithm crypt = Aes.Create();
+                    HashAlgorithm hash = SHA256.Create();
+                    crypt.BlockSize = 128;
+                    crypt.Key = hash.ComputeHash(Encoding.UTF8.GetBytes(this.pw));
+                    crypt.IV = new byte[] { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16 };
+
+                    using (MemoryStream memoryStream = new MemoryStream())
+                    {
+                        using (CryptoStream cryptoStream =
+                           new CryptoStream(memoryStream, crypt.CreateEncryptor(), CryptoStreamMode.Write))
+                        {
+                            cryptoStream.Write(bytes, 0, bytes.Length);
+                        }
+
+
+                        using (FileStream outFile = File.Create(Path.Combine(Path.Combine(Application.StartupPath, "tmp"), filename)))
+                        {
+                            var bytess = Encoding.UTF8.GetBytes(Convert.ToBase64String(memoryStream.ToArray()));
+                            outFile.Write(bytess, 0, bytess.Length);
+                        }
+                    }
+
+                }
+                catch (Exception) { }
             }
+            else if (enc && decRn)
+                ;
             else
             {
                 if (saved && location != "" && !auto)
                 {
-                    
-
+                    try
+                    {
                         string text = "";
                         MethodInvoker miReadText = new MethodInvoker(() =>
                         {
@@ -82,7 +127,7 @@ namespace ShortNotes
                         {
                             var bytes = Encoding.UTF8.GetBytes(text);
                             outFile.Write(bytes, 0, bytes.Length);
-                        }/*
+                        }
                     }
                     catch (Exception)
                     {
@@ -96,7 +141,7 @@ namespace ShortNotes
                             Text = name + "*";
                         });
                         this.Invoke(mI);
-                    }*/
+                    }
                 }
                 else if (saved && auto) { }
                 else
@@ -142,6 +187,13 @@ namespace ShortNotes
         }
         public void saveNow(bool safeAs = false)
         {
+            if (enc && decRn)
+            {
+                var msg = MessageBox.Show($"The tab will encrypt before you can save it!", $"Encrypt?", MessageBoxButtons.OKCancel, MessageBoxIcon.Warning, MessageBoxDefaultButton.Button1);
+                if (msg != DialogResult.OK)
+                    return;
+                EnCrypt();
+            }
             if (location == "" || safeAs)
             {
                 using (SaveFileDialog file = new SaveFileDialog())
@@ -209,6 +261,68 @@ namespace ShortNotes
             saved = true;
             Text = name;
             Name = name;
+        }
+        public void EnCrypt(string pw = "")
+        {
+            decRn = false;
+            byte[] bytes = Encoding.Unicode.GetBytes(txtBox.Text);
+            SymmetricAlgorithm crypt = Aes.Create();
+            HashAlgorithm hash = SHA256.Create();
+            crypt.BlockSize = 128;
+            if (pw == "")
+                crypt.Key = hash.ComputeHash(Encoding.UTF8.GetBytes(this.pw));
+            else
+                crypt.Key = hash.ComputeHash(Encoding.UTF8.GetBytes(pw));
+            crypt.IV = new byte[] { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16 };
+
+            using (MemoryStream memoryStream = new MemoryStream())
+            {
+                using (CryptoStream cryptoStream =
+                   new CryptoStream(memoryStream, crypt.CreateEncryptor(), CryptoStreamMode.Write))
+                {
+                    cryptoStream.Write(bytes, 0, bytes.Length);
+                }
+                adding = true;
+                txtBox.Text = Convert.ToBase64String(memoryStream.ToArray()); //Encrypted text is stored in Base64 String
+            }
+
+            if (!enc)
+            {
+                enc = true;
+                startBackgroundWorker(true);
+            }
+        }
+        public void Decrypt(string pw = "")
+        {
+            string txt = txtBox.Text;
+            try
+            {
+                decRn = true;
+                this.pw = pw;
+                byte[] bytes = Convert.FromBase64String(txtBox.Text); //Encrypted text is stored in Base64 String!
+                SymmetricAlgorithm crypt = Aes.Create();
+                HashAlgorithm hash = SHA256.Create();
+                crypt.Key = hash.ComputeHash(Encoding.UTF8.GetBytes(pw));
+                crypt.IV = new byte[] { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16 };
+
+                using (MemoryStream memoryStream = new MemoryStream(bytes))
+                {
+                    using (CryptoStream cryptoStream =
+                       new CryptoStream(memoryStream, crypt.CreateDecryptor(), CryptoStreamMode.Read))
+                    {
+                        byte[] decryptedBytes = new byte[bytes.Length];
+                        cryptoStream.Read(decryptedBytes, 0, decryptedBytes.Length);
+                        adding = true;
+                        txtBox.Text = Encoding.Unicode.GetString(decryptedBytes);
+                    }
+                }
+            }
+            catch (Exception)
+            {
+                decRn = false;
+                txtBox.Text = txt;
+                this.pw = "";
+            }
         }
     }
 }
