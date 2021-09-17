@@ -24,6 +24,8 @@ namespace ShortNotes
 
         private string tmpName;
         private BackgroundWorker backgroundWorker;
+        private BackgroundWorker backgroundWorker2;
+
         public nTabPage()
         {
             this.AutoScroll = true;
@@ -33,6 +35,10 @@ namespace ShortNotes
             backgroundWorker = new BackgroundWorker();
             backgroundWorker.WorkerSupportsCancellation = true;
             backgroundWorker.DoWork += new DoWorkEventHandler(this.backgroundWorker_DoWork);
+
+            backgroundWorker2 = new BackgroundWorker();
+            backgroundWorker2.WorkerSupportsCancellation = true;
+            backgroundWorker2.DoWork += new DoWorkEventHandler(this.backgroundWorker2_DoWork);
 
         }
 
@@ -59,7 +65,6 @@ namespace ShortNotes
             else
                 backgroundWorker.RunWorkerAsync();
         }
-
         private void backgroundWorker_DoWork(object sender, DoWorkEventArgs e)
         {
             if (enc && decRn && auto)
@@ -171,6 +176,38 @@ namespace ShortNotes
                         }
                     }
                     catch (Exception) { }
+                }
+            }
+        }
+
+        public void backgroundWorker2_DoWork(object sender, DoWorkEventArgs e)
+        {
+            string text = "";
+            MethodInvoker miReadText = new MethodInvoker(() =>
+            {
+                text = txtBox.Text;
+            });
+            this.Invoke(miReadText);
+
+            string textrn = "";
+            byte[] buf = new byte[1024];
+            int c;
+            using (FileStream fs = File.OpenRead(location))
+            {
+                while ((c = fs.Read(buf, 0, buf.Length)) > 0)
+                {
+                    adding = true;
+                    textrn += Encoding.ASCII.GetString(buf, 0, c);
+                }
+            }
+
+            if (text == textrn) if (saved)
+            {
+                var msg = MessageBox.Show("This file been modified.\nDo you want to reload it?", "file has been modified", MessageBoxButtons.YesNo, MessageBoxIcon.Question, MessageBoxDefaultButton.Button2);
+
+                if (msg == DialogResult.Yes)
+                {
+                        Reload();
                 }
             }
         }

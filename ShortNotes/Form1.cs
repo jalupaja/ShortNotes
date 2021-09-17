@@ -421,6 +421,46 @@ namespace ShortNotes
         {
             if (!((nTabPage)Tabs.SelectedTab).saved && !silent && Tabs.TabCount != lastTabIndex) { ((nTabPage)Tabs.TabPages[lastTabIndex]).startBackgroundWorker(true); }
 
+            #region see if file changed/ still exists
+            if (((nTabPage)Tabs.SelectedTab).location != "")
+            {
+                if (System.IO.File.Exists(((nTabPage)Tabs.SelectedTab).location))
+                {
+                    if (!((nTabPage)Tabs.SelectedTab).saved)
+                    {
+                        ((nTabPage)Tabs.SelectedTab).backgroundWorker2_DoWork(null, null);
+                    }
+                }
+                else
+                {
+                    var msg = MessageBox.Show("This file doesn't exist anymore.\nDo you want to keep it in the editor?", "file doesn't exist anymore", MessageBoxButtons.YesNo, MessageBoxIcon.Question, MessageBoxDefaultButton.Button1);
+                    if (msg == DialogResult.No)
+                    {
+                        string filename = "";
+                        if (((nTabPage)Tabs.SelectedTab).location == "")
+                            filename = Convert.ToBase64String(Encoding.UTF8.GetBytes(((nTabPage)Tabs.SelectedTab).name));
+                        else
+                            filename = Convert.ToBase64String(Encoding.UTF8.GetBytes(((nTabPage)Tabs.SelectedTab).location));
+                        try { System.IO.File.Delete(Path.Combine(Path.Combine(Application.StartupPath, "tmp"), filename)); } catch (Exception) { }
+
+                        int index = Tabs.SelectedIndex;
+                        var tab = Tabs.SelectedTab;
+                        if (Tabs.TabCount == 1)
+                        {
+                            newTab();
+                        }
+                        Tabs.Controls.Remove(tab);
+
+                        if (index == 0)
+                            Tabs.SelectedIndex = 0;
+                        else
+                            Tabs.SelectedIndex = index - 1;
+                        ResetOrder();
+                    }
+                }
+            }
+            #endregion
+
             ((nTabPage)Tabs.SelectedTab).txtBox.Focus();
             lastTabIndex = Tabs.Controls.IndexOf(Tabs.SelectedTab);
 

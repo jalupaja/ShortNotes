@@ -7,14 +7,13 @@
 - Startup option
 - Start Menu option
 - Drag and Drop for multiple files
+- change color for selected text
 
 
 # ToDo:
 
-- color selected text
+- command prompt in box
 - change Contextmenu "En/ Decrypt"
-- on page focus: if (saved) see if file changed, ask for reload
-- on page focus: if (saved) see if file exists, ask for delete
 - auto indent
 - enable, disable WordWrap (horizontal scrolling)
 - DragDrop Tabs (outside -> new window)
