@@ -328,6 +328,8 @@ namespace ShortNotes
                 enc = true;
                 startBackgroundWorker(true);
             }
+            txtBox.ContextMenuStrip.Items.Find("crypt", true).First().Text = "Decrypt Tab";
+
         }
         public void Decrypt(string pw = "")
         {
@@ -353,12 +355,15 @@ namespace ShortNotes
                         txtBox.Text = Encoding.Unicode.GetString(decryptedBytes);
                     }
                 }
+                txtBox.ContextMenuStrip.Items.Find("crypt", true).First().Text = "Encrypt Tab";
             }
             catch (Exception)
             {
                 decRn = false;
                 txtBox.Text = txt;
                 this.pw = "";
+                txtBox.ContextMenuStrip.Items.Find("crypt", true).First().Text = "Decrypt Tab";
+
             }
         }
     }

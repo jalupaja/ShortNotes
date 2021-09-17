@@ -86,6 +86,12 @@ namespace ShortNotes
             this.KeyPreview = true;
             lastTabIndex = sel;
             Tabs.SelectTab(Tabs.TabPages[sel]);
+
+            if (!((nTabPage)Tabs.SelectedTab).enc || ((nTabPage)Tabs.SelectedTab).decRn)
+                ((nTabPage)Tabs.SelectedTab).txtBox.ContextMenuStrip.Items.Find("crypt", true).First().Text = "Encrypt Tab";
+            else
+                ((nTabPage)Tabs.SelectedTab).txtBox.ContextMenuStrip.Items.Find("crypt", true).First().Text = "Decrypt Tab";
+
             ((nTabPage)Tabs.TabPages[sel]).txtBox.Focus();
         }
         protected override void OnActivated(EventArgs e)
@@ -461,6 +467,11 @@ namespace ShortNotes
             }
             #endregion
 
+            if (!((nTabPage)Tabs.SelectedTab).enc || ((nTabPage)Tabs.SelectedTab).decRn)
+                ((nTabPage)Tabs.SelectedTab).txtBox.ContextMenuStrip.Items.Find("crypt", true).First().Text = "Encrypt Tab";
+            else
+                ((nTabPage)Tabs.SelectedTab).txtBox.ContextMenuStrip.Items.Find("crypt", true).First().Text = "Decrypt Tab";
+
             ((nTabPage)Tabs.SelectedTab).txtBox.Focus();
             lastTabIndex = Tabs.Controls.IndexOf(Tabs.SelectedTab);
 
@@ -560,7 +571,7 @@ namespace ShortNotes
                     e.SuppressKeyPress = true;
                     return;
                 }
-                if (!((nTabPage)Tabs.SelectedTab).saved)
+                if (!((nTabPage)Tabs.SelectedTab).saved && ((nTabPage)Tabs.SelectedTab).txtBox.Text != "\n\n\n\n\n\n\n\n\n\n")
                 {
                     var msg = MessageBox.Show($"Do you want to save {Tabs.SelectedTab.Name}?", $"Save {Tabs.SelectedTab.Name}?", MessageBoxButtons.YesNoCancel, MessageBoxIcon.Question, MessageBoxDefaultButton.Button2);
                     if (msg == DialogResult.Yes)
@@ -657,9 +668,11 @@ namespace ShortNotes
             MenuCopyFilePath.Click += MenuCopyFilePath_Click;
 
             ToolStripMenuItem MenuCrypt = new ToolStripMenuItem();
+            MenuCrypt.Name = "crypt";
             MenuCrypt.Text = "En/ Decrypt Tab";
             MenuCrypt.Click += MenuCrypt_Click;
 
+            #region colors
             ToolStripMenuItem ColorWhite = new ToolStripMenuItem();
             ColorWhite.Text = "White";
             ColorWhite.Click += this.ColorWhite;
@@ -677,6 +690,7 @@ namespace ShortNotes
             ColorBlack.Click += this.ColorBlack;
             var MenuColorDropDown = new ToolStripDropDown();
             MenuColorDropDown.AutoClose = true;
+
             MenuColorDropDown.Items.AddRange(new ToolStripItem[]
             {
                 ColorWhite, ColorRed, ColorGreen, ColorYellow, ColorBlack
@@ -684,6 +698,8 @@ namespace ShortNotes
             ToolStripDropDownItem MenuColor = new ToolStripMenuItem();
             MenuColor.Text = "Change color to";
             MenuColor.DropDown = MenuColorDropDown;
+            #endregion
+
             //!!!
 
             contextMenu.Items.AddRange(new ToolStripItem[]
@@ -844,6 +860,7 @@ namespace ShortNotes
             //create index file: name, location, isSaved, isEncrypted, isSelected
             if (!silent)
             {
+                System.IO.File.Delete(Path.Combine(Path.Combine(Application.StartupPath, "tmp"), "index"));
                 using (var sw = new StreamWriter(Path.Combine(Path.Combine(Application.StartupPath, "tmp"), "index"), false))
                 {
                     for (int i = 0; i < Tabs.TabCount; i++)
