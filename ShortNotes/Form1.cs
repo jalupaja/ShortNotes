@@ -47,7 +47,7 @@ namespace ShortNotes
             if (!this.IsHandleCreated) CreateHandle();
             base.SetVisibleCore(!onlyTray);
             int sel = 0;
-            if (!clean)
+            if (!clean && Tabs.TabCount >= 1)
             {
                 //loading last files here
                 if (System.IO.File.Exists(Path.Combine(Path.Combine(Application.StartupPath, "tmp"), "index")))

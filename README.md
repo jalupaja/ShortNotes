@@ -12,7 +12,6 @@
 
 # ToDo:
 
-- change font size
 - command prompt in box
 - auto indent
 - enable, disable WordWrap (horizontal scrolling)
@@ -56,5 +55,6 @@ local Hotkeys  | Function
 (Strg+Shift+F) | search all tabs
 (Strg + R)	   | reload tab
 (Strg + E)	   | Encrypt/ Decrypt tab
-
+(Strg + +)	   | increase fontsize
+(Strg + -)	   | decrease fontsize
 
