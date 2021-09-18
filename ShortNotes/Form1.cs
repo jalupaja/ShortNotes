@@ -647,6 +647,14 @@ namespace ShortNotes
                 MenuCrypt_Click(null, null);
                 e.SuppressKeyPress = true;
             }
+            else if (e.Control && e.KeyCode == Keys.Oemplus)
+            {
+                ((nTabPage)Tabs.SelectedTab).txtBox.Font = new Font(((nTabPage)Tabs.SelectedTab).txtBox.Font.FontFamily, ((nTabPage)Tabs.SelectedTab).txtBox.Font.Size + 1);
+            }
+            else if (e.Control && e.KeyCode == Keys.OemMinus)
+            {
+                ((nTabPage)Tabs.SelectedTab).txtBox.Font = new Font(((nTabPage)Tabs.SelectedTab).txtBox.Font.FontFamily, ((nTabPage)Tabs.SelectedTab).txtBox.Font.Size - 1);
+            }
         }
 
         private void newTab(bool tmpLoad = false, string name = "", string location = "", bool isSaved = true, bool isEncrypted = false)

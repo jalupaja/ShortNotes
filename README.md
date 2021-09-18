@@ -12,8 +12,8 @@
 
 # ToDo:
 
+- change font size
 - command prompt in box
-- change Contextmenu "En/ Decrypt"
 - auto indent
 - enable, disable WordWrap (horizontal scrolling)
 - DragDrop Tabs (outside -> new window)
