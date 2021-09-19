@@ -12,7 +12,7 @@
 
 # ToDo:
 
-- auto indent (overwrite keyevent Enter)
+- fix scrolling
 - enable, disable WordWrap (horizontal scrolling)
 - DragDrop Tabs (outside -> new window)
 - fix DragDrop between Tabs

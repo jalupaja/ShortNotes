@@ -45,9 +45,51 @@ namespace ShortNotes
         public void Init()
         {
             txtBox.TextChanged += TxtBox_TextChanged;
+            txtBox.KeyDown += TxtBox_KeyDown;
             if (!saved)
                 Text = name + "*";
 
+        }
+
+        private void TxtBox_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.KeyCode == Keys.Enter)
+            {
+                string spaces = "";
+                int i = txtBox.GetFirstCharIndexOfCurrentLine();
+                bool good = true;
+                try
+                {
+                    _ = txtBox.Text[i];
+                }
+                catch (Exception)
+                {
+                    good = false;
+                }
+                if (good)
+                {
+                    while (txtBox.Text[i] == ' ' || txtBox.Text[i] == '\t')
+                    {
+                        if (txtBox.Text[i] == ' ')
+                            spaces += " ";
+                        else
+                            spaces += '\t';
+                        i++;
+                        if (i == txtBox.SelectionStart)
+                            break;
+                        try
+                        {
+                            _ = txtBox.Text[i];
+                        }
+                        catch (Exception)
+                        {
+                            break;
+                        }
+                    }
+                }
+                txtBox.SelectedText = Environment.NewLine + spaces;
+                e.SuppressKeyPress = true;
+            }
         }
 
         public void startBackgroundWorker(bool autom = false)
