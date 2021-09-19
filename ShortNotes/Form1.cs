@@ -47,52 +47,55 @@ namespace ShortNotes
             if (!this.IsHandleCreated) CreateHandle();
             base.SetVisibleCore(!onlyTray);
             int sel = 0;
-            if (!clean && Tabs.TabCount >= 1)
+            if (Tabs.TabCount == 0)
             {
-                //loading last files here
-                if (System.IO.File.Exists(Path.Combine(Path.Combine(Application.StartupPath, "tmp"), "index")))
+                if (!clean)
                 {
-                    int i = 0;
-                    using (var filestream = System.IO.File.OpenRead(Path.Combine(Path.Combine(Application.StartupPath, "tmp"), "index")))
-                    using (var streamReader = new StreamReader(filestream, Encoding.ASCII, true))
+                    //loading last files here
+                    if (System.IO.File.Exists(Path.Combine(Path.Combine(Application.StartupPath, "tmp"), "index")))
                     {
-                        string line;
-                        while ((line = streamReader.ReadLine()) != null)
+                        int i = 0;
+                        using (var filestream = System.IO.File.OpenRead(Path.Combine(Path.Combine(Application.StartupPath, "tmp"), "index")))
+                        using (var streamReader = new StreamReader(filestream, Encoding.ASCII, true))
                         {
-                            string[] args = line.Split("|||");
-                            bool a = false;
-                            bool b = false;
-                            if (args[2] == "True") a = true;
-                            if (args[3] == "True") b = true;
-                            if (args[4] == "True") sel = i;
-                            newTab(true, args[0], args[1], a, b);//!!!
-                            i++;
+                            string line;
+                            while ((line = streamReader.ReadLine()) != null)
+                            {
+                                string[] args = line.Split("|||");
+                                bool a = false;
+                                bool b = false;
+                                if (args[2] == "True") a = true;
+                                if (args[3] == "True") b = true;
+                                if (args[4] == "True") sel = i;
+                                newTab(true, args[0], args[1], a, b);//!!!
+                                i++;
+                            }
                         }
                     }
                 }
+                else if (!silent)
+                {
+                    foreach (string file in Directory.GetFiles(Path.Combine(Application.StartupPath, "tmp")))
+                        System.IO.File.Delete(file);
+                }
+
+                if (Tabs.TabCount == 0)
+                {
+                    newTab();
+                }
+
+
+                this.KeyPreview = true;
+                lastTabIndex = sel;
+                Tabs.SelectTab(Tabs.TabPages[sel]);
+
+                if (!((nTabPage)Tabs.SelectedTab).enc || ((nTabPage)Tabs.SelectedTab).decRn)
+                    ((nTabPage)Tabs.SelectedTab).txtBox.ContextMenuStrip.Items.Find("crypt", true).First().Text = "Encrypt Tab";
+                else
+                    ((nTabPage)Tabs.SelectedTab).txtBox.ContextMenuStrip.Items.Find("crypt", true).First().Text = "Decrypt Tab";
+
+                ((nTabPage)Tabs.TabPages[sel]).txtBox.Focus();
             }
-            else if (!silent)
-            {
-                foreach (string file in Directory.GetFiles(Path.Combine(Application.StartupPath, "tmp")))
-                    System.IO.File.Delete(file);
-            }
-
-            if (Tabs.TabCount == 0)
-            {
-                newTab();
-            }
-
-
-            this.KeyPreview = true;
-            lastTabIndex = sel;
-            Tabs.SelectTab(Tabs.TabPages[sel]);
-
-            if (!((nTabPage)Tabs.SelectedTab).enc || ((nTabPage)Tabs.SelectedTab).decRn)
-                ((nTabPage)Tabs.SelectedTab).txtBox.ContextMenuStrip.Items.Find("crypt", true).First().Text = "Encrypt Tab";
-            else
-                ((nTabPage)Tabs.SelectedTab).txtBox.ContextMenuStrip.Items.Find("crypt", true).First().Text = "Decrypt Tab";
-
-            ((nTabPage)Tabs.TabPages[sel]).txtBox.Focus();
         }
         protected override void OnActivated(EventArgs e)
         {
@@ -655,6 +658,16 @@ namespace ShortNotes
             {
                 ((nTabPage)Tabs.SelectedTab).txtBox.Font = new Font(((nTabPage)Tabs.SelectedTab).txtBox.Font.FontFamily, ((nTabPage)Tabs.SelectedTab).txtBox.Font.Size - 1);
             }
+            else if (e.Control && e.KeyCode == Keys.Space)
+            {
+                TxtMode = "cmd";
+                sTxt.Text = "";
+                sTxt.Visible = true;
+                sTxt.Focus();
+                sTxt.SelectAll();
+                searchText_TextChanged(null, null);
+                e.SuppressKeyPress = true;
+            }
         }
 
         private void newTab(bool tmpLoad = false, string name = "", string location = "", bool isSaved = true, bool isEncrypted = false)
@@ -698,6 +711,8 @@ namespace ShortNotes
             ColorBlack.Click += this.ColorBlack;
             var MenuColorDropDown = new ToolStripDropDown();
             MenuColorDropDown.AutoClose = true;
+            MenuColorDropDown.BackColor = Color.Black;
+            MenuColorDropDown.ForeColor = Color.White;
 
             MenuColorDropDown.Items.AddRange(new ToolStripItem[]
             {
@@ -1002,6 +1017,8 @@ namespace ShortNotes
                 }
                 else if (TxtMode == "Decrypt")
                     ((nTabPage)Tabs.SelectedTab).Decrypt(sTxt.Text);
+                else if (TxtMode == "cmd")
+                    Process.Start(new ProcessStartInfo("cmd", $"/c cd /d %userprofile% && start {sTxt.Text}"));
                 if (TxtMode == "Encrypt" || TxtMode == "Decrypt")
                     sTxt.UseSystemPasswordChar = false;
             }
@@ -1009,7 +1026,7 @@ namespace ShortNotes
 
         private void searchText_TextChanged(object sender, EventArgs e)
         {
-            if (TxtMode == "Encrypt" || TxtMode == "Decrypt")
+            if (TxtMode == "Encrypt" || TxtMode == "Decrypt" || TxtMode == "cmd")
                 ;
             else if (TxtMode == "search" || TxtMode == "searchAll")
             {

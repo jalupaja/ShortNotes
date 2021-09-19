@@ -12,8 +12,7 @@
 
 # ToDo:
 
-- command prompt in box
-- auto indent
+- auto indent (overwrite keyevent Enter)
 - enable, disable WordWrap (horizontal scrolling)
 - DragDrop Tabs (outside -> new window)
 - fix DragDrop between Tabs
@@ -57,4 +56,5 @@ local Hotkeys  | Function
 (Strg + E)	   | Encrypt/ Decrypt tab
 (Strg + +)	   | increase fontsize
 (Strg + -)	   | decrease fontsize
+(Strg + " ")   | start program
 
