@@ -70,7 +70,7 @@ namespace ShortNotes
                                 if (args[3] == "True") b = true;
                                 if (args[4] == "True") sel = i;
                                 try {c = Int16.Parse(args[5]); } catch (Exception) { }
-                                if (args[6] == "True") d = true;
+                                try { if (args[6] == "True") d = true; } catch (Exception) { }
                                 newTab(true, args[0], args[1], a, b, c, d);//!!!
                                 i++;
                             }
@@ -238,7 +238,7 @@ namespace ShortNotes
             {
                 try
                 {
-                    Process.Start("Updater.exe", "\"https://github.com/jalupaja/ShortNotes/releases/latest/download/ShortNotes.zip\" question");
+                    Process.Start("Updater.exe", "\"https://github.com/jalupaja/ShortNotes/releases/latest/download/ShortNotes.zip\"");
                 }
                 catch (Exception) { }
             }
