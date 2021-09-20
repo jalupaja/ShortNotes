@@ -703,7 +703,10 @@ namespace ShortNotes
 
             ToolStripMenuItem MenuWordWrap = new ToolStripMenuItem();
             MenuWordWrap.Name = "WordWrap";
-            MenuWordWrap.Text = "Enable WordWrap";
+            if (isWordWrap)
+                MenuWordWrap.Text = "Disable WordWrap";
+            else
+                MenuWordWrap.Text = "Enable WordWrap";
             MenuWordWrap.Click += MenuWordWrap_Click;
 
             #region colors
