@@ -64,10 +64,14 @@ namespace ShortNotes
                                 string[] args = line.Split("|||");
                                 bool a = false;
                                 bool b = false;
+                                int c = 0;
+                                bool d = false;
                                 if (args[2] == "True") a = true;
                                 if (args[3] == "True") b = true;
                                 if (args[4] == "True") sel = i;
-                                newTab(true, args[0], args[1], a, b);//!!!
+                                try {c = Int16.Parse(args[5]); } catch (Exception) { }
+                                if (args[6] == "True") d = true;
+                                newTab(true, args[0], args[1], a, b, c, d);//!!!
                                 i++;
                             }
                         }
@@ -99,7 +103,11 @@ namespace ShortNotes
         }
         protected override void OnActivated(EventArgs e)
         {
-            if (Tabs.TabCount > 0) { ((nTabPage)Tabs.SelectedTab).txtBox.Focus(); }
+            if (Tabs.TabCount > 0) {
+                if (sTxt.Visible)
+                    sTxt.Focus();
+                else
+                    ((nTabPage)Tabs.SelectedTab).txtBox.Focus(); }
             base.OnActivated(e);
         }
 
@@ -190,18 +198,18 @@ namespace ShortNotes
                 ("SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run", true);
 
             if (rk.GetValueNames().Contains("ShortNotes"))
-                Startup.Text = "Delete Startup entry";
+                Startup.Text = "Delete Startup Entry";
             else
-                Startup.Text = "Create Startup entry";
+                Startup.Text = "Create Startup Entry";
             Startup.Click += Startup_Click;
 
-            SearchUpdates.Text = "Search for updates";
+            SearchUpdates.Text = "Search For Updates";
             SearchUpdates.Click += SearchUpdates_Click;
             int offlineVersion = Int16.Parse(Application.ProductVersion.Replace(".", "").Replace("v", ""));
             int onlineVersion = Int16.Parse(new WebClient().DownloadString("https://raw.githubusercontent.com/jalupaja/ShortNotes/main/ShortNotes/VersionNumber.txt"));
             if (offlineVersion < onlineVersion)
             {
-                SearchUpdates.Text = "Install update";
+                SearchUpdates.Text = "Install Update";
             }
 
             //!!!
@@ -670,7 +678,7 @@ namespace ShortNotes
             }
         }
 
-        private void newTab(bool tmpLoad = false, string name = "", string location = "", bool isSaved = true, bool isEncrypted = false)
+        private void newTab(bool tmpLoad = false, string name = "", string location = "", bool isSaved = true, bool isEncrypted = false, int selIndex = 0, bool isWordWrap = false)
         {
             #region Right Click Menu for TextBox
             var contextMenu = new ContextMenuStrip();
@@ -680,18 +688,23 @@ namespace ShortNotes
             contextMenu.ForeColor = Color.White;
 
             ToolStripMenuItem MenuSaveAs = new ToolStripMenuItem();
-            MenuSaveAs.Text = "SaveAs";
+            MenuSaveAs.Text = "Save As";
             MenuSaveAs.BackColor = Color.Black;
             MenuSaveAs.Click += MenuSaveAs_Click;
 
             ToolStripMenuItem MenuCopyFilePath = new ToolStripMenuItem();
-            MenuCopyFilePath.Text = "Copy filepath";
+            MenuCopyFilePath.Text = "Copy Filepath";
             MenuCopyFilePath.Click += MenuCopyFilePath_Click;
 
             ToolStripMenuItem MenuCrypt = new ToolStripMenuItem();
             MenuCrypt.Name = "crypt";
             MenuCrypt.Text = "En/ Decrypt Tab";
             MenuCrypt.Click += MenuCrypt_Click;
+
+            ToolStripMenuItem MenuWordWrap = new ToolStripMenuItem();
+            MenuWordWrap.Name = "WordWrap";
+            MenuWordWrap.Text = "Enable WordWrap";
+            MenuWordWrap.Click += MenuWordWrap_Click;
 
             #region colors
             ToolStripMenuItem ColorWhite = new ToolStripMenuItem();
@@ -719,7 +732,7 @@ namespace ShortNotes
                 ColorWhite, ColorRed, ColorGreen, ColorYellow, ColorBlack
             });
             ToolStripDropDownItem MenuColor = new ToolStripMenuItem();
-            MenuColor.Text = "Change color to";
+            MenuColor.Text = "Change Color To";
             MenuColor.DropDown = MenuColorDropDown;
             #endregion
 
@@ -727,7 +740,7 @@ namespace ShortNotes
 
             contextMenu.Items.AddRange(new ToolStripItem[]
             {
-                MenuSaveAs, MenuCrypt, MenuCopyFilePath, MenuColor
+                MenuSaveAs, MenuWordWrap, MenuCrypt, MenuCopyFilePath, MenuColor
             });
             contextMenu.ResumeLayout(false);
             #endregion
@@ -738,10 +751,10 @@ namespace ShortNotes
             txtBox.BackColor = Color.Black;
             txtBox.ForeColor = Color.White;
             txtBox.Location = new Point(2, 0);
-            txtBox.Size = new Size(400, 455);
             txtBox.Anchor = (AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right);
             txtBox.BorderStyle = BorderStyle.None;
-            txtBox.ScrollBars = RichTextBoxScrollBars.ForcedBoth;
+            txtBox.ScrollBars = RichTextBoxScrollBars.Both;
+            txtBox.WordWrap = isWordWrap;
             txtBox.AllowDrop = true;
             txtBox.TabStop = false;
             txtBox.AcceptsTab = true;
@@ -819,12 +832,29 @@ namespace ShortNotes
             nTab.Name = name;
             nTab.Padding = Padding.Empty;
             nTab.Init();
+
+            txtBox.Size = nTab.Size;
             #endregion
 
-            
             Tabs.Controls.Add(nTab);
             Tabs.SelectTab(Tabs.TabCount - 1);
             ((nTabPage)Tabs.SelectedTab).txtBox.Focus();
+
+            txtBox.SelectionStart = selIndex;
+        }
+
+        private void MenuWordWrap_Click(object sender, EventArgs e)
+        {
+            if (((nTabPage)Tabs.SelectedTab).txtBox.ContextMenuStrip.Items.Find("WordWrap", true).First().Text == "Enable WordWrap")
+            {
+                ((nTabPage)Tabs.SelectedTab).txtBox.WordWrap = true;
+                ((nTabPage)Tabs.SelectedTab).txtBox.ContextMenuStrip.Items.Find("WordWrap", true).First().Text = "Disable WordWrap";
+            }
+            else
+            {
+                ((nTabPage)Tabs.SelectedTab).txtBox.WordWrap = false;
+                ((nTabPage)Tabs.SelectedTab).txtBox.ContextMenuStrip.Items.Find("WordWrap", true).First().Text = "Enable WordWrap";
+            }
         }
 
         #region Color Text
@@ -888,7 +918,7 @@ namespace ShortNotes
                 {
                     for (int i = 0; i < Tabs.TabCount; i++)
                     {
-                        sw.WriteLine($"{((nTabPage)Tabs.TabPages[i]).name}|||{((nTabPage)Tabs.TabPages[i]).location}|||{((nTabPage)Tabs.TabPages[i]).saved}|||{((nTabPage)Tabs.TabPages[i]).enc}|||{(Tabs.SelectedIndex == i)}");
+                        sw.WriteLine($"{((nTabPage)Tabs.TabPages[i]).name}|||{((nTabPage)Tabs.TabPages[i]).location}|||{((nTabPage)Tabs.TabPages[i]).saved}|||{((nTabPage)Tabs.TabPages[i]).enc}|||{(Tabs.SelectedIndex == i)}|||{((nTabPage)Tabs.TabPages[i]).txtBox.SelectionStart}|||{((nTabPage)Tabs.TabPages[i]).txtBox.WordWrap}");
                     }
                 }
             }

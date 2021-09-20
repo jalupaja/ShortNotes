@@ -28,10 +28,6 @@ namespace ShortNotes
 
         public nTabPage()
         {
-            this.AutoScroll = true;
-            this.HScroll = true;
-            this.VScroll = true;
-
             backgroundWorker = new BackgroundWorker();
             backgroundWorker.WorkerSupportsCancellation = true;
             backgroundWorker.DoWork += new DoWorkEventHandler(this.backgroundWorker_DoWork);
@@ -66,6 +62,8 @@ namespace ShortNotes
                 {
                     good = false;
                 }
+                if (i == txtBox.SelectionStart)
+                    good = false;
                 if (good)
                 {
                     while (txtBox.Text[i] == ' ' || txtBox.Text[i] == '\t')

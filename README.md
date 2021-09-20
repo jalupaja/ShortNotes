@@ -12,8 +12,6 @@
 
 # ToDo:
 
-- fix scrolling
-- enable, disable WordWrap (horizontal scrolling)
 - DragDrop Tabs (outside -> new window)
 - fix DragDrop between Tabs
 - change encoding (by reading text to bytes and back to text txtBox.AppendText(Encoding.ASCII.GetString))
