@@ -12,6 +12,8 @@
 
 # ToDo:
 
+- add Syntax Option (Split Text, get indexes: bold, ...)
+- change fontsize only for selected text
 - DragDrop Tabs (outside -> new window)
 - fix DragDrop between Tabs
 - change encoding (by reading text to bytes and back to text txtBox.AppendText(Encoding.ASCII.GetString))
