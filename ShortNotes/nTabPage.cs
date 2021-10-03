@@ -40,6 +40,7 @@ namespace ShortNotes
 
         public void Init()
         {
+            txtBox.EnableAutoDragDrop = true;
             txtBox.TextChanged += TxtBox_TextChanged;
             txtBox.KeyDown += TxtBox_KeyDown;
             if (!saved)

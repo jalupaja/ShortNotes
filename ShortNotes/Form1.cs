@@ -436,123 +436,7 @@ namespace ShortNotes
 
         private void Tabs_SelectedIndexChanged(object sender, EventArgs e)
         {
-            if (!((nTabPage)Tabs.SelectedTab).saved && !silent && Tabs.TabCount != lastTabIndex) { ((nTabPage)Tabs.TabPages[lastTabIndex]).startBackgroundWorker(true); }
 
-            #region see if file changed/ still exists
-            if (((nTabPage)Tabs.SelectedTab).location != "")
-            {
-                if (System.IO.File.Exists(((nTabPage)Tabs.SelectedTab).location))
-                {
-                    if (!((nTabPage)Tabs.SelectedTab).saved)
-                    {
-                        ((nTabPage)Tabs.SelectedTab).backgroundWorker2_DoWork(null, null);
-                    }
-                }
-                else
-                {
-                    var msg = MessageBox.Show("This file doesn't exist anymore.\nDo you want to keep it in the editor?", "file doesn't exist anymore", MessageBoxButtons.YesNo, MessageBoxIcon.Question, MessageBoxDefaultButton.Button1);
-                    if (msg == DialogResult.No)
-                    {
-                        string filename = "";
-                        if (((nTabPage)Tabs.SelectedTab).location == "")
-                            filename = Convert.ToBase64String(Encoding.UTF8.GetBytes(((nTabPage)Tabs.SelectedTab).name));
-                        else
-                            filename = Convert.ToBase64String(Encoding.UTF8.GetBytes(((nTabPage)Tabs.SelectedTab).location));
-                        try { System.IO.File.Delete(Path.Combine(Path.Combine(Application.StartupPath, "tmp"), filename)); } catch (Exception) { }
-
-                        int index = Tabs.SelectedIndex;
-                        var tab = Tabs.SelectedTab;
-                        if (Tabs.TabCount == 1)
-                        {
-                            newTab();
-                        }
-                        Tabs.Controls.Remove(tab);
-
-                        if (index == 0)
-                            Tabs.SelectedIndex = 0;
-                        else
-                            Tabs.SelectedIndex = index - 1;
-                        ResetOrder();
-                    }
-                }
-            }
-            #endregion
-
-            if (!((nTabPage)Tabs.SelectedTab).enc || ((nTabPage)Tabs.SelectedTab).decRn)
-                ((nTabPage)Tabs.SelectedTab).txtBox.ContextMenuStrip.Items.Find("crypt", true).First().Text = "Encrypt Tab";
-            else
-                ((nTabPage)Tabs.SelectedTab).txtBox.ContextMenuStrip.Items.Find("crypt", true).First().Text = "Decrypt Tab";
-
-            ((nTabPage)Tabs.SelectedTab).txtBox.Focus();
-            lastTabIndex = Tabs.Controls.IndexOf(Tabs.SelectedTab);
-
-            #region tried "smart tabcontrol": not working
-            /*
-            if ((DateTime.Now - lastTimeNewPage).TotalMilliseconds < 50 || (Tabs.Controls.IndexOf(Tabs.SelectedTab) != lastTabIndex -1 && Tabs.Controls.IndexOf(Tabs.SelectedTab) != lastTabIndex + 1 && (lastTabIndex == 0 && Tabs.Controls.IndexOf(Tabs.SelectedTab) == Tabs.TabCount-1) && (lastTabIndex == Tabs.TabCount - 1 && Tabs.Controls.IndexOf(Tabs.SelectedTab) == 0)))
-            {
-                //safe file to local folder
-                ((nTabPage)Tabs.TabPages[lastTabIndex]).startBackgroundWorker();
-            }
-            else
-            {
-                if ((DateTime.Now - lastTabTime).TotalMilliseconds > 750)
-                {
-                    //safe file to local folder
-                    ((nTabPage)Tabs.TabPages[lastTabIndex]).startBackgroundWorker();
-                    if (secondLastTabIndex == Tabs.Controls.IndexOf(Tabs.SelectedTab))
-                    {
-                        ((nTabPage)Tabs.SelectedTab).txtBox.Focus();
-                    }
-                    else if (Tabs.TabPages[secondLastTabIndex] != null)
-                    {
-                        Tabs.SelectTab(secondLastTabIndex);
-                        ((nTabPage)Tabs.TabPages[secondLastTabIndex]).txtBox.Focus();
-                    }
-                    else
-                        ((nTabPage)Tabs.SelectedTab).txtBox.Focus();
-                }
-                else if ((DateTime.Now - lastTabTime).TotalMilliseconds > 10)
-                {
-                    //safe file to local folder
-                    ((nTabPage)Tabs.SelectedTab).startBackgroundWorker();
-                    if (Tabs.Controls.IndexOf(Tabs.SelectedTab) == secondLastTabIndex)
-                    {
-                        if (lastTabIndex == secondLastTabIndex - 1 || (secondLastTabIndex == Tabs.Controls.IndexOf(Tabs.SelectedTab) && lastTabIndex == 0))
-                        {
-                            if (secondLastTabIndex == Tabs.TabCount - 1)
-                            {
-                                Tabs.SelectTab(0);
-                                ((nTabPage)Tabs.TabPages[0]).txtBox.Focus();
-                            }
-                            else
-                            {
-                                Tabs.SelectTab(secondLastTabIndex + 1);
-                                ((nTabPage)Tabs.TabPages[secondLastTabIndex]).txtBox.Focus();
-                            }
-                        }
-                        else
-                        {
-                            if (secondLastTabIndex == 0)
-                            {
-                                Tabs.SelectTab(Tabs.TabCount - 1);
-                                ((nTabPage)Tabs.TabPages[Tabs.TabCount - 1]).txtBox.Focus();
-                            }
-                            else
-                            {
-                                Tabs.SelectTab(secondLastTabIndex - 1);
-                                ((nTabPage)Tabs.TabPages[secondLastTabIndex - 1]).txtBox.Focus();
-                            }
-                        }
-                    }
-                }
-                else
-                    return;
-            }
-            lastTabTime = DateTime.Now;
-            secondLastTabIndex = lastTabIndex;
-            lastTabIndex = Tabs.Controls.IndexOf(Tabs.SelectedTab);
-            */
-            #endregion
         }
 
         private void Form1_KeyDown(object sender, KeyEventArgs e) //local Hotkeys
@@ -660,11 +544,23 @@ namespace ShortNotes
             }
             else if (e.Control && e.KeyCode == Keys.Oemplus)
             {
-                ((nTabPage)Tabs.SelectedTab).txtBox.Font = new Font(((nTabPage)Tabs.SelectedTab).txtBox.Font.FontFamily, ((nTabPage)Tabs.SelectedTab).txtBox.Font.Size + 1);
+                if (((nTabPage)Tabs.SelectedTab).txtBox.SelectedText.Length < 1)
+                    try { ((nTabPage)Tabs.SelectedTab).txtBox.ZoomFactor = ((nTabPage)Tabs.SelectedTab).txtBox.ZoomFactor + (float)0.1; }catch (Exception) { }
+                else
+                {
+                    try { ((nTabPage)Tabs.SelectedTab).txtBox.SelectionFont = new Font(((nTabPage)Tabs.SelectedTab).txtBox.SelectionFont.FontFamily, ((nTabPage)Tabs.SelectedTab).txtBox.SelectionFont.Size + (float)0.5); } catch (Exception) { }
+                    e.SuppressKeyPress = true;
+                }
             }
             else if (e.Control && e.KeyCode == Keys.OemMinus)
             {
-                ((nTabPage)Tabs.SelectedTab).txtBox.Font = new Font(((nTabPage)Tabs.SelectedTab).txtBox.Font.FontFamily, ((nTabPage)Tabs.SelectedTab).txtBox.Font.Size - 1);
+                if (((nTabPage)Tabs.SelectedTab).txtBox.SelectedText.Length < 1)
+                    try { ((nTabPage)Tabs.SelectedTab).txtBox.ZoomFactor = ((nTabPage)Tabs.SelectedTab).txtBox.ZoomFactor - (float)0.1; }catch (Exception) { }
+                else
+                {
+                    try { ((nTabPage)Tabs.SelectedTab).txtBox.SelectionFont = new Font(((nTabPage)Tabs.SelectedTab).txtBox.SelectionFont.FontFamily, ((nTabPage)Tabs.SelectedTab).txtBox.SelectionFont.Size - (float)0.5); } catch (Exception) { }
+                    e.SuppressKeyPress = true;
+                }
             }
             else if (e.Control && e.KeyCode == Keys.Space)
             {
@@ -848,16 +744,7 @@ namespace ShortNotes
 
         private void MenuWordWrap_Click(object sender, EventArgs e)
         {
-            if (((nTabPage)Tabs.SelectedTab).txtBox.ContextMenuStrip.Items.Find("WordWrap", true).First().Text == "Enable WordWrap")
-            {
-                ((nTabPage)Tabs.SelectedTab).txtBox.WordWrap = true;
-                ((nTabPage)Tabs.SelectedTab).txtBox.ContextMenuStrip.Items.Find("WordWrap", true).First().Text = "Disable WordWrap";
-            }
-            else
-            {
-                ((nTabPage)Tabs.SelectedTab).txtBox.WordWrap = false;
-                ((nTabPage)Tabs.SelectedTab).txtBox.ContextMenuStrip.Items.Find("WordWrap", true).First().Text = "Enable WordWrap";
-            }
+
         }
 
         #region Color Text
@@ -939,29 +826,35 @@ namespace ShortNotes
 
         private void TabsDragOver(object sender, DragEventArgs e)
         {
-            if (e.Data.GetDataPresent(DataFormats.FileDrop))
+            if (e.Data.GetDataPresent(DataFormats.FileDrop) || e.Data.GetDataPresent(typeof(string)) || e.Data.GetDataPresent(DataFormats.Text))
                 e.Effect = DragDropEffects.Link;
             else
                 e.Effect = DragDropEffects.None;
         }
         private void TabsDragDrop(object sender, DragEventArgs e)
         {
-            string[] files = e.Data.GetData(DataFormats.FileDrop) as string[]; // get all files droppeds  
-            foreach (string file in files)
-                if (System.IO.File.Exists(file))
-                {
-                    bool neww = true;
-                    for (int i = 0; i < Tabs.TabCount; i++)
+            if (e.Data.GetDataPresent(DataFormats.FileDrop))
+            {
+                string[] files = e.Data.GetData(DataFormats.FileDrop) as string[]; // get all files droppeds  
+                foreach (string file in files)
+                    if (System.IO.File.Exists(file))
                     {
-                        if (((nTabPage)Tabs.TabPages[i]).location == file)
+                        bool neww = true;
+                        for (int i = 0; i < Tabs.TabCount; i++)
                         {
-                            Tabs.SelectedTab = Tabs.TabPages[i];
-                            neww = false;
+                            if (((nTabPage)Tabs.TabPages[i]).location == file)
+                            {
+                                Tabs.SelectedTab = Tabs.TabPages[i];
+                                neww = false;
+                            }
                         }
+                        if (neww)
+                            newTab(false, "", file);
                     }
-                    if (neww)
-                        newTab(false, "", file);
-                }
+            }
+            else
+            {
+            }
         }
 
         private void Tabs_MouseMove(object sender, MouseEventArgs e)
@@ -969,7 +862,6 @@ namespace ShortNotes
             if (e.Button == MouseButtons.Left)
                 this.Tabs.DoDragDrop(this.Tabs.SelectedTab, DragDropEffects.All);
         }
-
         private void Tabs_DragDrop(object sender, DragEventArgs e)
         {
             TabPage drag_tab = (TabPage)e.Data.GetData(typeof(TabPage));
@@ -1002,7 +894,6 @@ namespace ShortNotes
                 ResetOrder();
             }
         }
-
         private void Tabs_DragEnter(object sender, DragEventArgs e)
         {
             if (e.Data.GetDataPresent(typeof(TabPage)))

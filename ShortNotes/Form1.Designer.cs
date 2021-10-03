@@ -79,7 +79,7 @@ namespace ShortNotes
             this.Tabs.Size = new System.Drawing.Size(395, 473);
             this.Tabs.TabIndex = 2;
             this.Tabs.TabStop = false;
-            this.Tabs.SelectedIndexChanged += new System.EventHandler(this.Tabs_SelectedIndexChanged);
+            this.Tabs.SelectedIndexChanged += new System.EventHandler(this.MenuWordWrap_Click);
             this.Tabs.DragDrop += new System.Windows.Forms.DragEventHandler(this.Tabs_DragDrop);
             this.Tabs.DragEnter += new System.Windows.Forms.DragEventHandler(this.Tabs_DragEnter);
             this.Tabs.MouseMove += new System.Windows.Forms.MouseEventHandler(this.Tabs_MouseMove);
